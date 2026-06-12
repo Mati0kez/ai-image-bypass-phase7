@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-image-bypass"
+version = "0.9.0"
+description = "Modular framework for AI image detection robustness evaluation and experimental bypass research"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "AI Research Team"}
+]
+keywords = ["ai", "image", "detection", "bypass", "adversarial", "robustness"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+dependencies = [
+    "numpy>=1.23",
+    "Pillow>=9.0",
+    "scikit-image>=0.19",
+    "requests>=2.28",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+lpips = [
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "lpips>=0.1",
+]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+    "black>=23.0",
+    "mypy>=1.0",
+    "responses>=0.23",
+]
+full = [
+    "ai-image-bypass[lpips,dev]",
+]
+
+[project.scripts]
+bypass-ai-detector = "bypass_cli:main"
+benchmark = "benchmark.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/your-org/ai-image-bypass"
+Documentation = "https://github.com/your-org/ai-image-bypass#readme"
+Repository = "https://github.com/your-org/ai-image-bypass"
+Issues = "https://github.com/your-org/ai-image-bypass/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/transform_core", "src/bypass_cli", "src/lpips_attack", "src/synthid_removal", "src/detector_loop", "src/external_validation", "src/benchmark"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint with ruff
+        run: |
+          ruff check src/ tests/
+
+      - name: Format check with black
+        run: |
+          black --check src/ tests/
+
+      - name: Type check with mypy
+        run: |
+          mypy src/transform_core src/benchmark --ignore-missing-imports || true
+
+      - name: Test with pytest (core, no torch)
+        run: |
+          PYTHONPATH=src pytest tests/ -v --tb=short -k "not lpips"
+
+  test-optional-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install with lpips optional deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[lpips,dev]"
+
+      - name: Verify lpips_attack imports
+        run: |
+          PYTHONPATH=src python -c "from lpips_attack.module import LPIPSModule; print('LPIPS module OK')"
+
+      - name: Run full test suite
+        run: |
+          PYTHONPATH=src pytest tests/ -v --tb=short
