@@ -24,7 +24,11 @@ def post_process_image(config: TransformConfig) -> str:
     Returns:
         输出文件路径。
     """
-    selected = list(_selected_modules(config.profile))
+    # 优先使用用户自定义的方法族列表（用于 WebUI 逐项测试）
+    if getattr(config, "methods", None):
+        selected = list(config.methods)
+    else:
+        selected = list(_selected_modules(config.profile))
 
     # 动态调度：根据 config 标志启用实验性对抗模块并调整顺序
     # 基础族（已由 profile 选定）→ LPIPS → Watermark → Regeneration

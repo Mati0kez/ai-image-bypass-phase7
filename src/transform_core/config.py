@@ -47,6 +47,9 @@ class TransformConfig:
     lpips_blackbox_method: str = "spsa"  # spsa | nes
     detector_weight: float = 1.0  # LPIPS + Detector 联合优化时的 detector 分数权重
 
+    # 自定义方法族列表（用于 WebUI 逐项测试，优先级高于 profile）
+    methods: Optional[list[str]] = None
+
     watermark_remove: bool = False
     detector_feedback: bool = False
     detector_name: str = "local:resnet50"
