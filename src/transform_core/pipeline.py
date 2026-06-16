@@ -40,6 +40,10 @@ def post_process_image(config: TransformConfig) -> str:
         if "watermark" not in selected:
             selected.append("watermark")
 
+    # 强制 metadata 方法族（只要 metadata_mode != "strip" 就注入 EXIF）
+    if getattr(config, "metadata_mode", "strip") != "strip" and "metadata" not in selected:
+        selected.append("metadata")
+
     # Regeneration 模式选择：local/remote 优先使用 regeneration，否则回退 surrogate
     regen_mode = getattr(config, "regeneration_mode", "surrogate")
     if regen_mode in ("local", "remote") and "regeneration" in METHOD_FAMILIES:
@@ -73,10 +77,10 @@ def post_process_image(config: TransformConfig) -> str:
     image = image.filter(ImageFilter.UnsharpMask(radius=1.0, percent=60, threshold=3))
     image = ImageEnhance.Contrast(image).enhance(1.04)
 
-    # EXIF / 元数据注入（延迟导入以避免循环依赖）
+    # EXIF / 元数据注入（从 transform_core.metadata 导入，避免依赖根目录文件）
     exif_bytes = None
     if "metadata" in selected:
-        from bypass_ai_detector import _metadata_bytes
+        from .metadata import _metadata_bytes
         exif_bytes = _metadata_bytes(
             config.metadata_mode, config.real_photo_path, image
         )

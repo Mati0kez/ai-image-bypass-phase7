@@ -66,6 +66,38 @@ class TransformConfig:
     regeneration_prompt: str = "high quality, detailed, photorealistic"
     regeneration_api_endpoint: Optional[str] = None
 
+    # Diffusion Reconstruction（SynthID 水印去除）扩展参数
+    diffusion_reconstruction_enabled: bool = False
+    diffusion_reconstruction_mode: str = "local"  # local | surrogate
+    diffusion_reconstruction_model_path: Optional[str] = None
+    diffusion_reconstruction_denoise_strength: float = 0.25
+    diffusion_reconstruction_guidance_scale: float = 7.5
+    diffusion_reconstruction_num_passes: int = 2
+    diffusion_reconstruction_prompt: str = "high quality, detailed, clean"
+
+    # Frequency Peaks Cleansing (频谱峰值清洗) 扩展参数
+    frequency_peaks_cleansing_enabled: bool = False
+    frequency_peaks_cleansing_domain: str = "dct"  # dct | fft
+    frequency_peaks_cleansing_threshold: float = 0.5
+    frequency_peaks_cleansing_replacement_strategy: str = "zeroing"  # zeroing | noise_injection
+
+    # PRNU Simulation / Removal (传感器指纹模拟/去除) 扩展参数
+    prnu_simulation_enabled: bool = False
+    prnu_simulation_mode: str = "extract_add"  # extract_add | remove
+    prnu_simulation_reference_path: Optional[str] = None
+    prnu_simulation_strength: float = 0.5
+
+    # Gradient/Edge-aware Perturbation (梯度/边缘感知扰动) 扩展参数
+    gradient_edge_aware_perturbation_enabled: bool = False
+    gradient_edge_aware_perturbation_edge_weight: float = 2.0
+    gradient_edge_aware_perturbation_smooth_weight: float = 0.5
+
+    # Transfer-based Black-box Attack Framework 扩展参数
+    transfer_blackbox_attack_enabled: bool = False
+    transfer_blackbox_attack_surrogate_model: str = "resnet50"
+    transfer_blackbox_attack_algorithm: str = "fgsm"  # fgsm | pgd
+    transfer_blackbox_attack_epsilon: float = 0.03
+
     # 相机模拟细粒度开关
     camera_sim: Dict[str, Any] = field(
         default_factory=lambda: {

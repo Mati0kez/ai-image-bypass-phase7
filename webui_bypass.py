@@ -1,12 +1,13 @@
 import tempfile
 import uuid
+import shutil
 from pathlib import Path
 
 import gradio as gr
 from PIL import Image
 
-from transform_core.config import TransformConfig
-from transform_core.pipeline import post_process_image as new_post_process_image
+# 仅使用 legacy 接口（已验证能正常注入 metadata 且保持对抗效果）
+from bypass_ai_detector import post_process_image as legacy_post_process_image
 
 
 def process_image(
@@ -66,41 +67,28 @@ def process_image(
             else:
                 status_note = ""
 
-            # 合并三个分组的方法族
-            all_methods = (method_base or []) + (method_adversarial or []) + (method_regen or [])
-            custom_methods = all_methods if all_methods else None
+            # 修复 real_photo 的传递（关键修复）
+            real_photo_path = None
+            if real_photo and str(real_photo).lower() != "none":
+                real_photo_path = str(real_photo)
 
-            # 构造 TransformConfig（支持 P2/P3 新能力）
-            config = TransformConfig(
-                input_path=str(input_path),
-                output_path=str(output_path),
-                manifest_path=str(manifest_path),
-                profile=profile,
-                seed=seed_value,
-                quality=quality_value,
+            # 调用 legacy 接口（不传递 methods 参数，让 legacy 内部根据 profile 选择）
+            # 同时确保 metadata_mode 和 real_photo_path 正确传递
+            legacy_post_process_image(
+                str(input_path),
+                str(output_path),
+                real_photo_path,
                 noise_strength=float(noise),
+                skin_strength=float(skin),
                 fft_strength=float(fft),
                 pixel_strength=float(pixel),
+                quality=quality_value,
                 glcm_strength=float(glcm),
-                skin_strength=float(skin),
+                profile=profile,
                 metadata_mode=metadata_mode,
-                real_photo_path=str(real_photo) if real_photo else None,
-                # P2: Detector-in-the-Loop
-                detector_feedback=bool(detector_feedback),
-                max_iter=int(max_iter),
-                # P3: LPIPS 黑盒
-                lpips_enabled=bool(lpips_enabled),
-                lpips_blackbox=bool(lpips_blackbox),
-                lpips_strength=float(lpips_strength),
-                lpips_steps=int(lpips_steps),
-                # 自定义方法族（用于逐项测试）
-                methods=custom_methods,
+                manifest_path=str(manifest_path),
+                seed=seed_value,
             )
-
-            new_post_process_image(config)
-
-            with Image.open(output_path) as img:
-                result_image = img.copy()
 
             if manifest_path.exists():
                 stable_manifest = Path(tempfile.gettempdir()) / f"processed_final_{uuid.uuid4().hex}.manifest.json"
@@ -109,7 +97,12 @@ def process_image(
             else:
                 manifest_output = None
 
-            return result_image, manifest_output, f"处理完成。manifest 已生成。{status_note}"
+            # 使用 shutil.copy 复制到持久的临时位置，确保文件在函数返回后仍然存在
+            stable_output = Path(tempfile.gettempdir()) / f"processed_final_{uuid.uuid4().hex}.jpg"
+            shutil.copy(str(output_path), str(stable_output))
+
+            # 返回持久的文件路径给 gr.File，确保 EXIF 不丢失
+            return str(stable_output), manifest_output, f"处理完成。manifest 已生成。{status_note}"
 
     except Exception as exc:
         return None, None, f"错误: {type(exc).__name__}: {exc}"
@@ -183,7 +176,7 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
             seed = gr.Number(value=1234, precision=0, label="随机种子")
 
             # P2/P3 新能力控件
-            with gr.Accordion("高级对抗选项（P2/P3）", open=False):
+                with gr.Accordion("高级对抗选项（P2/P3/P10.4）", open=False):
                 quality_priority = gr.Checkbox(
                     label="画质优先模式（推荐，自动降低强度以保持画质）",
                     value=True
@@ -209,6 +202,7 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
                         choices=[
                             ("lpips（感知攻击）", "lpips"),
                             ("watermark（水印移除）", "watermark"),
+                            ("transfer_blackbox_attack（迁移黑盒攻击 P10.4）", "transfer_blackbox_attack"),
                         ],
                         label="对抗方法族",
                         value=[],

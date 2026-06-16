@@ -21,7 +21,10 @@
 | Detector-in-the-Loop | 实验性 | 真实闭环结构（detector.score + strength 动态调整 + 图像迭代）；mock 分数可用 |
 | Hive 外部验证 | 实验性 | HTTP 客户端已实现；需 API key 做真实 e2e |
 | LPIPS 非语义攻击 | 可用（黑盒路径） | 需 torch；支持黑盒优化（SPSA），`detector_feedback=True` 时自动启用；梯度路径保留 |
-| SynthID / watermark removal | 实验性 | 简化 FFT 策略；通过 `profile=adversarial` 或 `watermark_remove=True` 接入 |
+| SynthID / watermark removal | 实验性 | 简化 FFT 策略 + 新增 diffusion_reconstruction（扩散重建） |
+| Frequency Peaks Cleansing | 实验性 | 频谱峰值识别与抑制，精确对抗 GAN Fingerprint |
+| Gradient/Edge-aware Perturbation | 实验性 | 边缘感知扰动，精确对抗 Gradient Analysis |
+| Transfer-based Black-box Attack | 实验性 | 利用代理模型生成迁移性对抗样本，针对 ML Detection |
 | Benchmark / Experiment | 可用 | 报告生成、Wilson CI、失败案例导出 |
 | CLI 打包入口 | 可用 | `bypass-ai-detector`、`benchmark` |
 | WebUI MVP | 实验性 | 基础 Gradio；无 LPIPS/水印/DIL 等高级控件 |
@@ -33,6 +36,9 @@
 - **模块化变换管道**：`TransformConfig` + `TransformModule` 注册表，7 种核心方法族。
 - **Detector-in-the-Loop**（实验性）：`detector_feedback=True` 触发真实闭环（detector.score + StrengthOverride 迭代 + 图像更新），mock/真实 Adapter 均支持。
 - **SynthID 水印移除**（占位）：`synthid_removal` 子包提供实验性 SpectralCodebook + V3 策略。
+- **Frequency Peaks Cleansing**（实验性）：在频域中识别并抑制代表上采样伪影的特定峰值，精确对抗 GAN Fingerprint。
+- **Gradient/Edge-aware Perturbation**（实验性）：边缘感知扰动，精确对抗 Gradient Analysis。
+- **Transfer-based Black-box Attack**（实验性）：利用代理模型生成迁移性对抗样本，针对 ML Detection。
 - **LPIPS 非语义攻击**（实验性）：`lpips_attack` 子包，需 `pip install -e ".[lpips]"`。
 - **外部平台验证**（实验性）：`external_validation` 支持 Hive API + Mock 降级 + Quota Guard。
 - **Benchmark + Experiment 模式**（可用）：批量评估、Wilson CI、失败案例导出。

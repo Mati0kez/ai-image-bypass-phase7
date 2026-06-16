@@ -12,6 +12,11 @@ from . import (
     camera,
     regeneration_surrogate,
     regeneration,
+    diffusion_reconstruction,
+    frequency_peaks_cleansing,
+    prnu_simulation,
+    gradient_edge_aware_perturbation,
+    transfer_blackbox_attack,
 )
 
 # 条件导入实验性对抗模块（torch 缺失时优雅降级）
@@ -34,4 +39,9 @@ __all__ = [
     "camera",
     "regeneration_surrogate",
     "regeneration",
+    "diffusion_reconstruction",
+    "frequency_peaks_cleansing",
+    "prnu_simulation",
+    "gradient_edge_aware_perturbation",
+    "transfer_blackbox_attack",
 ]
