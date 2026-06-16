@@ -7,7 +7,6 @@
 from typing import List, Tuple, Callable, Optional
 from dataclasses import dataclass
 from PIL import Image
-import numpy as np
 
 from .detector_interface import DetectorInterface
 from . import LocalDetectorAdapter, HiveAPIDetectorAdapter

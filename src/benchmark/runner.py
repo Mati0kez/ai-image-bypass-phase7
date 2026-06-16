@@ -4,12 +4,11 @@
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from dataclasses import dataclass, field
 from typing import Literal
 import time
 from PIL import Image
-import numpy as np
 
 from transform_core.config import TransformConfig
 from transform_core.pipeline import post_process_image

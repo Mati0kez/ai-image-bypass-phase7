@@ -126,7 +126,7 @@ class LPIPSModule(BaseLPIPSModule):
 
             with torch.no_grad():
                 diff = perturbed - img_tensor
-                norm = torch.norm(diff.view(diff.shape[0], -1), dim=1, keepdim=True)
+                norm = torch.norm(diff.reshape(diff.shape[0], -1), dim=1, keepdim=True)
                 norm = norm.view(-1, 1, 1, 1) + 1e-8
                 max_norm = strength * 0.1
                 if norm.max() > max_norm:

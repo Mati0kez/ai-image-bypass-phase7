@@ -90,7 +90,7 @@ def main():
         report_paths = generate_experiment_report(
             results, runner.failure_cases, args.output_dir, config.platforms
         )
-        print(f"\n✅ Experiment 完成！")
+        print("\n✅ Experiment 完成！")
         print(f"  - JSON: {report_paths['json']}")
         print(f"  - CSV (failures): {report_paths['csv']}")
         print(f"  - MD: {report_paths['md']}")
@@ -102,7 +102,7 @@ def main():
         generate_json_report(results, str(json_path))
         generate_html_report(results, str(html_path))
 
-        print(f"\n✅ Benchmark 完成！")
+        print("\n✅ Benchmark 完成！")
         print(f"  - JSON 报告: {json_path}")
         print(f"  - HTML 报告: {html_path}")
 

@@ -3,6 +3,8 @@
 相机管线模拟（暗角、色差、噪声、hot pixels、banding、bayer）+ 多轮 JPEG + 屏幕/镜头 artifact。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image, ImageFilter
 
