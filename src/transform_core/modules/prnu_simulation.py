@@ -94,9 +94,22 @@ class PRNUSimulationModule(TransformModule):
         return Image.fromarray(result_arr, "RGB")
 
     def _apply_surrogate(self, img: Image.Image, config: "TransformConfig") -> Image.Image:
-        """代理模式（占位）。"""
-        print("[PRNUSimulationModule] surrogate 模式（占位），返回原图")
-        return img.convert("RGB")
+        """自生成指纹代理模式（无 reference image 时使用）。"""
+        if not _SCIPY_AVAILABLE:
+            print("[PRNUSimulationModule] scipy 未安装，回退原图")
+            return img.convert("RGB")
+
+        print("[PRNUSimulationModule] surrogate 模式：使用输入图像自身生成模拟 PRNU 指纹")
+        strength = getattr(config, "prnu_simulation_strength", 0.5)
+
+        arr = np.array(img).astype(np.float32)
+        # 使用高斯高通残差作为模拟指纹
+        low_pass = gaussian_filter(arr, sigma=5)
+        fingerprint = arr - low_pass
+
+        result_arr = arr + fingerprint * strength
+        result_arr = np.clip(result_arr, 0, 255).astype(np.uint8)
+        return Image.fromarray(result_arr, "RGB")
 
 
 # import-time 自动注册

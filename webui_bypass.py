@@ -32,6 +32,18 @@ def process_image(
     method_base,
     method_adversarial,
     method_regen,
+    # P9/P10 新模块参数
+    freq_domain,
+    freq_threshold,
+    freq_strategy,
+    prnu_mode,
+    prnu_strength,
+    prnu_ref_image,
+    edge_weight,
+    smooth_weight,
+    transfer_model,
+    transfer_algorithm,
+    transfer_epsilon,
 ):
     if input_image is None:
         return None, None, "请上传图片"
@@ -72,23 +84,73 @@ def process_image(
             if real_photo and str(real_photo).lower() != "none":
                 real_photo_path = str(real_photo)
 
-            # 调用 legacy 接口（不传递 methods 参数，让 legacy 内部根据 profile 选择）
-            # 同时确保 metadata_mode 和 real_photo_path 正确传递
-            legacy_post_process_image(
-                str(input_path),
-                str(output_path),
-                real_photo_path,
-                noise_strength=float(noise),
-                skin_strength=float(skin),
-                fft_strength=float(fft),
-                pixel_strength=float(pixel),
-                quality=quality_value,
-                glcm_strength=float(glcm),
-                profile=profile,
-                metadata_mode=metadata_mode,
-                manifest_path=str(manifest_path),
-                seed=seed_value,
-            )
+            # 收集用户选中的方法族
+            selected_methods = (method_base or []) + (method_adversarial or []) + (method_regen or [])
+
+            p9_p10_modules = {
+                "frequency_peaks_cleansing",
+                "prnu_simulation",
+                "gradient_edge_aware_perturbation",
+                "transfer_blackbox_attack",
+            }
+
+            use_new_pipeline = any(m in p9_p10_modules for m in selected_methods)
+
+            if use_new_pipeline:
+                # 构造 TransformConfig 并调用新 Pipeline
+                from transform_core.config import TransformConfig
+                from transform_core.pipeline import post_process_image as new_post_process_image
+
+                config = TransformConfig(
+                    input_path=str(input_path),
+                    output_path=str(output_path),
+                    manifest_path=str(manifest_path),
+                    profile=profile,
+                    seed=seed_value,
+                    quality=quality_value,
+                    noise_strength=float(noise),
+                    fft_strength=float(fft),
+                    pixel_strength=float(pixel),
+                    glcm_strength=float(glcm),
+                    skin_strength=float(skin),
+                    metadata_mode=metadata_mode,
+                    real_photo_path=real_photo_path,
+                    methods=selected_methods,
+                    # P9/P10 特定参数
+                    frequency_peaks_cleansing_enabled="frequency_peaks_cleansing" in selected_methods,
+                    frequency_peaks_cleansing_domain=freq_domain,
+                    frequency_peaks_cleansing_threshold=float(freq_threshold),
+                    frequency_peaks_cleansing_replacement_strategy=freq_strategy,
+                    prnu_simulation_enabled="prnu_simulation" in selected_methods,
+                    prnu_simulation_mode=prnu_mode,
+                    prnu_simulation_strength=float(prnu_strength),
+                    prnu_simulation_reference_path=prnu_ref_image,
+                    gradient_edge_aware_perturbation_enabled="gradient_edge_aware_perturbation" in selected_methods,
+                    gradient_edge_aware_perturbation_edge_weight=float(edge_weight),
+                    gradient_edge_aware_perturbation_smooth_weight=float(smooth_weight),
+                    transfer_blackbox_attack_enabled="transfer_blackbox_attack" in selected_methods,
+                    transfer_blackbox_attack_surrogate_model=transfer_model,
+                    transfer_blackbox_attack_algorithm=transfer_algorithm,
+                    transfer_blackbox_attack_epsilon=float(transfer_epsilon),
+                )
+                new_post_process_image(config)
+            else:
+                # 调用 legacy 接口（不传递 methods 参数，让 legacy 内部根据 profile 选择）
+                legacy_post_process_image(
+                    str(input_path),
+                    str(output_path),
+                    real_photo_path,
+                    noise_strength=float(noise),
+                    skin_strength=float(skin),
+                    fft_strength=float(fft),
+                    pixel_strength=float(pixel),
+                    quality=quality_value,
+                    glcm_strength=float(glcm),
+                    profile=profile,
+                    metadata_mode=metadata_mode,
+                    manifest_path=str(manifest_path),
+                    seed=seed_value,
+                )
 
             if manifest_path.exists():
                 stable_manifest = Path(tempfile.gettempdir()) / f"processed_final_{uuid.uuid4().hex}.manifest.json"
@@ -176,7 +238,7 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
             seed = gr.Number(value=1234, precision=0, label="随机种子")
 
             # P2/P3 新能力控件
-                with gr.Accordion("高级对抗选项（P2/P3/P10.4）", open=False):
+            with gr.Accordion("高级对抗选项（P2/P3/P10.4）", open=False):
                 quality_priority = gr.Checkbox(
                     label="画质优先模式（推荐，自动降低强度以保持画质）",
                     value=True
@@ -202,11 +264,34 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
                         choices=[
                             ("lpips（感知攻击）", "lpips"),
                             ("watermark（水印移除）", "watermark"),
+                            ("frequency_peaks_cleansing（频谱峰值清洗 P9）", "frequency_peaks_cleansing"),
+                            ("prnu_simulation（PRNU 模拟/去除 P9）", "prnu_simulation"),
+                            ("gradient_edge_aware_perturbation（边缘感知扰动 P10.3）", "gradient_edge_aware_perturbation"),
                             ("transfer_blackbox_attack（迁移黑盒攻击 P10.4）", "transfer_blackbox_attack"),
                         ],
                         label="对抗方法族",
                         value=[],
                     )
+
+                # === P9/P10 新模块参数控件 ===
+                with gr.Accordion("频谱峰值清洗参数 (P9)", open=False):
+                    freq_domain = gr.Dropdown(choices=["dct", "fft"], value="dct", label="频域类型")
+                    freq_threshold = gr.Slider(0.1, 1.0, 0.5, label="峰值阈值")
+                    freq_strategy = gr.Dropdown(choices=["zeroing", "noise_injection"], value="zeroing", label="替换策略")
+
+                with gr.Accordion("PRNU 模拟/去除参数 (P9)", open=False):
+                    prnu_mode = gr.Dropdown(choices=["extract_add", "remove"], value="extract_add", label="模式")
+                    prnu_strength = gr.Slider(0.1, 1.0, 0.5, label="强度")
+                    prnu_ref_image = gr.Image(type="filepath", label="参考图像（可选，用于真实 PRNU 提取）")
+
+                with gr.Accordion("边缘感知扰动参数 (P10.3)", open=False):
+                    edge_weight = gr.Slider(0.5, 5.0, 2.0, label="边缘权重")
+                    smooth_weight = gr.Slider(0.0, 2.0, 0.5, label="平滑权重")
+
+                with gr.Accordion("迁移黑盒攻击参数 (P10.4)", open=False):
+                    transfer_model = gr.Dropdown(choices=["resnet50", "resnet18"], value="resnet50", label="代理模型")
+                    transfer_algorithm = gr.Dropdown(choices=["fgsm", "pgd"], value="fgsm", label="攻击算法")
+                    transfer_epsilon = gr.Slider(0.01, 0.1, 0.03, label="Epsilon")
 
                 with gr.Accordion("重生成方法族", open=True):
                     method_regen = gr.CheckboxGroup(
@@ -308,6 +393,18 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
             method_base,
             method_adversarial,
             method_regen,
+            # P9/P10 参数
+            freq_domain,
+            freq_threshold,
+            freq_strategy,
+            prnu_mode,
+            prnu_strength,
+            prnu_ref_image,
+            edge_weight,
+            smooth_weight,
+            transfer_model,
+            transfer_algorithm,
+            transfer_epsilon,
         ],
         outputs=[output_image, manifest_file, status],
     )
