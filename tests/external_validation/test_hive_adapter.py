@@ -30,13 +30,7 @@ def test_hive_adapter_successful_response():
     responses.add(
         responses.POST,
         "https://api.thehive.ai/api/v2/task/sync",
-        json={
-            "task": {
-                "result": {
-                    "classifications": [{"score": 0.87}]
-                }
-            }
-        },
+        json={"task": {"result": {"classifications": [{"score": 0.87}]}}},
         status=200,
     )
 

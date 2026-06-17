@@ -33,8 +33,8 @@ def test_metadata_injection_with_custom_methods():
             input_path=str(input_path),
             output_path=str(output_path),
             manifest_path=str(manifest_path),
-            profile="metadata",           # 只使用 metadata profile
-            metadata_mode="synthetic",    # 用户选择了合成元数据
+            profile="metadata",  # 只使用 metadata profile
+            metadata_mode="synthetic",  # 用户选择了合成元数据
             quality=90,
         )
 
@@ -42,8 +42,9 @@ def test_metadata_injection_with_custom_methods():
 
         # 验证 1: manifest 中应该包含 metadata 方法族
         manifest = json.loads(manifest_path.read_text())
-        assert "metadata" in manifest.get("method_families", []), \
-            f"metadata 方法族未被加入，当前 method_families: {manifest.get('method_families')}"
+        assert "metadata" in manifest.get(
+            "method_families", []
+        ), f"metadata 方法族未被加入，当前 method_families: {manifest.get('method_families')}"
 
         # 验证 2: 输出图片应该有 EXIF
         out_img = Image.open(output_path)

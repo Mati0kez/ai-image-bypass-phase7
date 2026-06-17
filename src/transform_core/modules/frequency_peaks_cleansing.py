@@ -41,7 +41,14 @@ class FrequencyPeaksCleansingModule(TransformModule):
 
         return self._apply_local(img, config, domain, threshold, strategy)
 
-    def _apply_local(self, img: Image.Image, config: "TransformConfig", domain: str, threshold: float, strategy: str) -> Image.Image:
+    def _apply_local(
+        self,
+        img: Image.Image,
+        config: "TransformConfig",
+        domain: str,
+        threshold: float,
+        strategy: str,
+    ) -> Image.Image:
         """本地频域峰值清洗实现。"""
         try:
             from scipy.fftpack import dct, idct
@@ -54,20 +61,20 @@ class FrequencyPeaksCleansingModule(TransformModule):
 
         for c in range(3):
             channel = arr[:, :, c]
-            
+
             # 1. 转换到频域
             if domain == "dct":
                 # DCT 通常在 8x8 块上计算，但为简化，我们计算全局 DCT
                 # 注意：实际 GAN 指纹通常在块级 DCT 中
-                freq = dct(dct(channel, axis=0, norm='ortho'), axis=1, norm='ortho')
-            else: # fft
+                freq = dct(dct(channel, axis=0, norm="ortho"), axis=1, norm="ortho")
+            else:  # fft
                 freq = np.fft.fft2(channel)
                 freq = np.fft.fftshift(freq)
 
             # 2. 对数缩放与峰值识别
             log_spectrum = np.log(np.abs(freq) + 1e-8)
             mean_spectrum = np.mean(log_spectrum)
-            
+
             # 识别峰值：高于均值 + 阈值
             # 这里简化处理，实际可能需要更复杂的峰值检测算法
             mask = log_spectrum > (mean_spectrum + threshold)
@@ -75,14 +82,14 @@ class FrequencyPeaksCleansingModule(TransformModule):
             # 3. 峰值抑制
             if strategy == "zeroing":
                 freq[mask] = 0
-            else: # noise_injection
+            else:  # noise_injection
                 # 注入小幅噪声
                 noise = rng.normal(0, 1, size=freq.shape) * np.abs(freq[mask]) * 0.1  # noqa: F821
                 freq[mask] = freq[mask] + noise
 
             # 4. 转换回空间域
             if domain == "dct":
-                cleaned_channel = idct(idct(freq, axis=0, norm='ortho'), axis=1, norm='ortho')
+                cleaned_channel = idct(idct(freq, axis=0, norm="ortho"), axis=1, norm="ortho")
             else:
                 cleaned_channel = np.fft.ifftshift(freq)
                 cleaned_channel = np.fft.ifft2(cleaned_channel)
@@ -92,7 +99,7 @@ class FrequencyPeaksCleansingModule(TransformModule):
 
         result_arr = np.stack(result_channels, axis=2)
         result_arr = np.clip(result_arr, 0, 255).astype(np.uint8)
-        
+
         return Image.fromarray(result_arr, "RGB")
 
     def _apply_surrogate(self, img: Image.Image, config: "TransformConfig") -> Image.Image:

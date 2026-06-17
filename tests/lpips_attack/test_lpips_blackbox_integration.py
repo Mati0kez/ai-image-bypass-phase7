@@ -44,6 +44,7 @@ def test_adversarial_with_lpips_blackbox_and_detector_feedback():
         assert Path(result).exists()
         # manifest 应存在且包含 lpips
         import json
+
         manifest = json.loads(manifest_path.read_text())
         assert "lpips" in manifest.get("method_families", [])
         print("✅ LPIPS blackbox + DIL 集成测试通过")

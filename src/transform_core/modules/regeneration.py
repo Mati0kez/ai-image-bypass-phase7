@@ -84,6 +84,7 @@ class RegenerationModule(TransformModule):
         """代理模式（原有逻辑）。"""
         try:
             from bypass_ai_detector import add_regeneration_surrogate
+
             return add_regeneration_surrogate(img, strength=0.25)
         except Exception:
             return img.convert("RGB")

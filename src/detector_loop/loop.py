@@ -100,7 +100,9 @@ class DetectorLoop:
                     self._no_improve_count = 0
 
             if current_score < self.config.detector_threshold:
-                print(f"[DetectorLoop] Score {current_score:.3f} < threshold {self.config.detector_threshold:.3f}, stopping.")
+                print(
+                    f"[DetectorLoop] Score {current_score:.3f} < threshold {self.config.detector_threshold:.3f}, stopping."
+                )
                 break
 
             # 4. 自适应强度：根据真实 gap 更新 override
@@ -115,6 +117,8 @@ class DetectorLoop:
                     fft_scale=fft_adj,
                     pixel_scale=pixel_adj,
                 )
-                print(f"[DetectorLoop] Step {step} real adaptive: noise*{noise_adj:.2f}, fft*{fft_adj:.2f}, pixel*{pixel_adj:.2f}")
+                print(
+                    f"[DetectorLoop] Step {step} real adaptive: noise*{noise_adj:.2f}, fft*{fft_adj:.2f}, pixel*{pixel_adj:.2f}"
+                )
 
         return current_img, self.history

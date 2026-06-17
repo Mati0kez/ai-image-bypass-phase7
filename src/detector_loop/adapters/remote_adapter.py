@@ -16,7 +16,9 @@ class HiveAPIDetectorAdapter(DetectorInterface):
     当前为骨架实现，实际 HTTP 请求逻辑留待后续扩展。
     """
 
-    def __init__(self, api_key: Optional[str] = None, endpoint: str = "https://api.hive.com/detect"):
+    def __init__(
+        self, api_key: Optional[str] = None, endpoint: str = "https://api.hive.com/detect"
+    ):
         self._api_key = api_key
         self._endpoint = endpoint
 

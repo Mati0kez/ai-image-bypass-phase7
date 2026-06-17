@@ -21,7 +21,9 @@ def _extract_carriers(fft_magnitude: np.ndarray, top_k: int = 20) -> List[Tuple[
     return list(zip(coords[0], coords[1]))
 
 
-def generate_codebook(image_paths: List[str], resolutions: List[Tuple[int, int]]) -> SpectralCodebook:
+def generate_codebook(
+    image_paths: List[str], resolutions: List[Tuple[int, int]]
+) -> SpectralCodebook:
     """从图像列表生成 SpectralCodebook。"""
     profiles = {}
     for res in resolutions:
@@ -57,9 +59,18 @@ def generate_codebook(image_paths: List[str], resolutions: List[Tuple[int, int]]
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate SpectralCodebook from known SynthID images")
-    parser.add_argument("--images", type=str, required=True, help="Directory or list of images containing SynthID")
-    parser.add_argument("--resolutions", type=str, required=True, help="Comma-separated list, e.g. 1024,1024;512,512")
+    parser = argparse.ArgumentParser(
+        description="Generate SpectralCodebook from known SynthID images"
+    )
+    parser.add_argument(
+        "--images", type=str, required=True, help="Directory or list of images containing SynthID"
+    )
+    parser.add_argument(
+        "--resolutions",
+        type=str,
+        required=True,
+        help="Comma-separated list, e.g. 1024,1024;512,512",
+    )
     parser.add_argument("--output", type=str, default="synthid_codebook.npz")
     args = parser.parse_args()
 
@@ -69,7 +80,9 @@ def main():
     # 加载图像路径
     img_dir = Path(args.images)
     if img_dir.is_dir():
-        image_paths = [str(p) for p in img_dir.glob("*.png")] + [str(p) for p in img_dir.glob("*.jpg")]
+        image_paths = [str(p) for p in img_dir.glob("*.png")] + [
+            str(p) for p in img_dir.glob("*.jpg")
+        ]
     else:
         image_paths = [args.images]
 

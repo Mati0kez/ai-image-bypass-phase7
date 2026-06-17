@@ -32,9 +32,7 @@ def generate_json_report(results: List[BenchmarkResult], output_path: str) -> st
         ],
     }
 
-    Path(output_path).write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    Path(output_path).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return output_path
 
 

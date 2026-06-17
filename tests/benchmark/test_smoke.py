@@ -22,9 +22,7 @@ def test_benchmark_runner_smoke():
 
         # 创建 3 张测试图像
         for i in range(3):
-            img = Image.fromarray(
-                np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
-            )
+            img = Image.fromarray(np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8))
             img.save(input_dir / f"test_{i}.jpg")
 
         config = BenchmarkConfig(

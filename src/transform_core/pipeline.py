@@ -81,9 +81,8 @@ def post_process_image(config: TransformConfig) -> str:
     exif_bytes = None
     if "metadata" in selected:
         from .metadata import _metadata_bytes
-        exif_bytes = _metadata_bytes(
-            config.metadata_mode, config.real_photo_path, image
-        )
+
+        exif_bytes = _metadata_bytes(config.metadata_mode, config.real_photo_path, image)
 
     # 保存参数
     save_params: Dict[str, Any] = {

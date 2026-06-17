@@ -25,7 +25,17 @@ PROFILE_METHODS: Dict[str, Tuple[str, ...]] = {
     "texture": ("texture",),
     "camera": ("camera",),
     "metadata": ("metadata",),
-    "adversarial": ("metadata", "encoding", "noise", "frequency", "texture", "camera", "lpips", "watermark", "regeneration"),
+    "adversarial": (
+        "metadata",
+        "encoding",
+        "noise",
+        "frequency",
+        "texture",
+        "camera",
+        "lpips",
+        "watermark",
+        "regeneration",
+    ),
 }
 
 # 全局注册表：方法族名称 -> Module 实例

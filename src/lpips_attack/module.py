@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 try:
     import torch
     import lpips
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -75,13 +76,18 @@ class LPIPSModule(BaseLPIPSModule):
             return img.convert("RGB")
 
         # P3: 黑盒路径选择
-        use_blackbox = getattr(config, "lpips_blackbox", False) or getattr(config, "detector_feedback", False)
+        use_blackbox = getattr(config, "lpips_blackbox", False) or getattr(
+            config, "detector_feedback", False
+        )
         if use_blackbox:
             try:
                 from .blackbox import blackbox_perturb
+
                 # 构造 detector callable（如果 self.detector 存在）
                 det_callable = self.detector.score if self.detector is not None else None
-                return blackbox_perturb(img, self._get_lpips_model(self._get_device(config)), det_callable, config)
+                return blackbox_perturb(
+                    img, self._get_lpips_model(self._get_device(config)), det_callable, config
+                )
             except Exception as e:
                 print(f"[LPIPSModule] blackbox 路径失败，回退梯度路径: {e}")
 
@@ -109,8 +115,10 @@ class LPIPSModule(BaseLPIPSModule):
             if use_detector:
                 if self.detector is not None:
                     perturbed_pil = Image.fromarray(
-                        (perturbed.detach().cpu().squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8),
-                        "RGB"
+                        (perturbed.detach().cpu().squeeze(0).permute(1, 2, 0).numpy() * 255).astype(
+                            np.uint8
+                        ),
+                        "RGB",
                     )
                     detector_score = self.detector.score(perturbed_pil)
                 else:

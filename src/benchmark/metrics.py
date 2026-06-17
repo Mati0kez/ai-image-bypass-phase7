@@ -31,8 +31,9 @@ def compute_ssim(img1: Image.Image, img2: Image.Image) -> float:
     sigma1, sigma2 = a.var(), b.var()
     sigma12 = np.mean((a - mu1) * (b - mu2))
     c1, c2 = 0.01**2, 0.03**2
-    ssim = ((2 * mu1 * mu2 + c1) * (2 * sigma12 + c2)) / \
-           ((mu1**2 + mu2**2 + c1) * (sigma1 + sigma2 + c2))
+    ssim = ((2 * mu1 * mu2 + c1) * (2 * sigma12 + c2)) / (
+        (mu1**2 + mu2**2 + c1) * (sigma1 + sigma2 + c2)
+    )
     return float(np.clip(ssim, 0.0, 1.0))
 
 
@@ -45,9 +46,7 @@ def compute_lpips(img1: Image.Image, img2: Image.Image) -> float:
     return float(np.mean(np.abs(a - b)))
 
 
-def compute_perceptual_metrics(
-    original: Image.Image, transformed: Image.Image
-) -> Dict[str, float]:
+def compute_perceptual_metrics(original: Image.Image, transformed: Image.Image) -> Dict[str, float]:
     """计算 perceptual 指标。"""
     return {
         "psnr": compute_psnr(original, transformed),
@@ -56,14 +55,16 @@ def compute_perceptual_metrics(
     }
 
 
-def compute_detection_metrics(
-    scores: List[float], threshold: float = 0.5
-) -> Dict[str, float]:
+def compute_detection_metrics(scores: List[float], threshold: float = 0.5) -> Dict[str, float]:
     """计算 detection 相关指标。"""
     if not scores:
         return {"bypass_rate": 0.0, "mean_score": 0.0, "min_score": 0.0}
 
-    final_scores = scores[-1:] if isinstance(scores[-1], (int, float)) else [s[2] for s in scores if isinstance(s, (list, tuple))]
+    final_scores = (
+        scores[-1:]
+        if isinstance(scores[-1], (int, float))
+        else [s[2] for s in scores if isinstance(s, (list, tuple))]
+    )
     # 兼容 history 格式 [(step, detector, score), ...]
     if isinstance(scores[0], (list, tuple)) and len(scores[0]) == 3:
         final_scores = [s[2] for s in scores]

@@ -52,7 +52,9 @@ def _synthetic_exif(image: Image.Image) -> bytes:
     return exif.tobytes()
 
 
-def _metadata_bytes(mode: str, real_photo_path: Optional[str], image: Image.Image) -> Optional[bytes]:
+def _metadata_bytes(
+    mode: str, real_photo_path: Optional[str], image: Image.Image
+) -> Optional[bytes]:
     normalized = (mode or "copy").lower()
     if normalized == "strip":
         return None

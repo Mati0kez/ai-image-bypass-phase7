@@ -44,7 +44,7 @@ class SynthIDRemovalModule(TransformModule):
                     coherence = np.cos(phase[y, x] - phases[i]) if i < len(phases) else 0.0
                     # 相位相干时减去更多能量
                     reduction = 0.8 if coherence > 0.5 else 0.3
-                    magnitude[y, x] *= (1 - reduction)
+                    magnitude[y, x] *= 1 - reduction
         else:
             # 回退：全局衰减
             magnitude *= 0.7
@@ -83,6 +83,7 @@ class SynthIDRemovalModule(TransformModule):
 # 自动注册到 transform_core
 try:
     from transform_core.registry import register_module
+
     register_module(SynthIDRemovalModule())
 except Exception:
     pass  # 允许独立导入

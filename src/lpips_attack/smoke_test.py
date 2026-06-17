@@ -20,9 +20,7 @@ def main():
     print("Running LPIPSModule smoke test (CPU mode)...")
 
     # 创建测试图片
-    img = Image.fromarray(
-        np.random.randint(0, 255, (128, 128, 3), dtype=np.uint8), "RGB"
-    )
+    img = Image.fromarray(np.random.randint(0, 255, (128, 128, 3), dtype=np.uint8), "RGB")
 
     # 配置
     cfg = TransformConfig(

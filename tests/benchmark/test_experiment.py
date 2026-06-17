@@ -25,9 +25,14 @@ def test_experiment_report_generation():
     with tempfile.TemporaryDirectory() as tmp:
         # 模拟结果
         from benchmark.runner import BenchmarkResult
+
         results = [
-            BenchmarkResult("img1.jpg", {"lpips": 0.1}, {"bypass_rate": 0.8, "final_score": 0.3}, [], 1.0, ""),
-            BenchmarkResult("img2.jpg", {"lpips": 0.2}, {"bypass_rate": 0.4, "final_score": 0.6}, [], 1.0, ""),
+            BenchmarkResult(
+                "img1.jpg", {"lpips": 0.1}, {"bypass_rate": 0.8, "final_score": 0.3}, [], 1.0, ""
+            ),
+            BenchmarkResult(
+                "img2.jpg", {"lpips": 0.2}, {"bypass_rate": 0.4, "final_score": 0.6}, [], 1.0, ""
+            ),
         ]
         failures = [
             {"image_name": "img2.jpg", "final_detector_score": 0.6, "perceptual_lpips": 0.2}

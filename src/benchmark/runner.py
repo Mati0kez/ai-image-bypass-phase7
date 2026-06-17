@@ -70,13 +70,13 @@ class BenchmarkRunner:
             result = self._evaluate_single_image(img_file, output_path)
             result.runtime_sec = time.time() - start_time
             self.results.append(result)
-            print(f"  - {img_file.name}: bypass_rate={result.detection.get('bypass_rate', 0):.2f}, runtime={result.runtime_sec:.2f}s")
+            print(
+                f"  - {img_file.name}: bypass_rate={result.detection.get('bypass_rate', 0):.2f}, runtime={result.runtime_sec:.2f}s"
+            )
 
         return self.results
 
-    def _evaluate_single_image(
-        self, img_path: Path, output_dir: Path
-    ) -> BenchmarkResult:
+    def _evaluate_single_image(self, img_path: Path, output_dir: Path) -> BenchmarkResult:
         """评估单张图像。"""
         original = Image.open(img_path).convert("RGB")
 
@@ -102,6 +102,7 @@ class BenchmarkRunner:
 
         # 读取 manifest 获取 detector 分数历史
         import json
+
         detector_history = []
         if manifest_path.exists():
             manifest = json.loads(manifest_path.read_text())
@@ -115,7 +116,9 @@ class BenchmarkRunner:
             ext_scores = []
             for step in range(3):
                 s = vr.score(transformed)
-                ext_scores.append({"step": step, "detector": self.config.detector_name, "score": round(s, 4)})
+                ext_scores.append(
+                    {"step": step, "detector": self.config.detector_name, "score": round(s, 4)}
+                )
             detector_history = ext_scores
 
         # 计算 perceptual 指标
@@ -130,14 +133,16 @@ class BenchmarkRunner:
         # 失败案例收集（experiment 模式或 final_score >= threshold）
         final_score = detection.get("final_score", 1.0)
         if final_score >= self.config.detector_threshold:
-            self.failure_cases.append({
-                "image_name": img_path.name,
-                "original_path": str(img_path),
-                "transformed_path": str(out_path),
-                "final_detector_score": round(final_score, 4),
-                "perceptual_lpips": perceptual.get("lpips", 0.0),
-                "platform": self.config.detector_name,
-            })
+            self.failure_cases.append(
+                {
+                    "image_name": img_path.name,
+                    "original_path": str(img_path),
+                    "transformed_path": str(out_path),
+                    "final_detector_score": round(final_score, 4),
+                    "perceptual_lpips": perceptual.get("lpips", 0.0),
+                    "platform": self.config.detector_name,
+                }
+            )
 
         return BenchmarkResult(
             image_name=img_path.name,

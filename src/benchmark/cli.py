@@ -69,7 +69,11 @@ def main():
 
     args = parser.parse_args()
 
-    platforms = [p.strip() for p in args.platforms.split(",")] if args.mode == "experiment" else [args.detector]
+    platforms = (
+        [p.strip() for p in args.platforms.split(",")]
+        if args.mode == "experiment"
+        else [args.detector]
+    )
 
     config = BenchmarkConfig(
         input_dir=args.input_dir,

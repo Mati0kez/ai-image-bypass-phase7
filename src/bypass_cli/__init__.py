@@ -30,8 +30,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="AI image detector robustness transform suite")
     parser.add_argument("--input", dest="input_path", help="Input image path (preferred)")
     parser.add_argument("--output", dest="output_path", help="Output image path (preferred)")
-    parser.add_argument("input", nargs="?", help="Input image (positional, deprecated; use --input)")
-    parser.add_argument("output", nargs="?", help="Output image (positional, deprecated; use --output)")
+    parser.add_argument(
+        "input", nargs="?", help="Input image (positional, deprecated; use --input)"
+    )
+    parser.add_argument(
+        "output", nargs="?", help="Output image (positional, deprecated; use --output)"
+    )
     parser.add_argument("--real", default=None, help="Reference JPEG for EXIF copy mode")
     parser.add_argument("--noise", type=float, default=0.8)
     parser.add_argument("--skin", type=float, default=0.75)

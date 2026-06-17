@@ -68,9 +68,7 @@ def test_generate_experiment_report_writes_all_artifacts():
                 "perceptual_lpips": 0.2,
             }
         ]
-        paths = generate_experiment_report(
-            _sample_results(), failures, tmp, ["remote:mock"]
-        )
+        paths = generate_experiment_report(_sample_results(), failures, tmp, ["remote:mock"])
 
         assert Path(paths["json"]).exists()
         assert Path(paths["csv"]).exists()

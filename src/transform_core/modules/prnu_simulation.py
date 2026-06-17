@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 try:
     from scipy.ndimage import gaussian_filter
+
     _SCIPY_AVAILABLE = True
 except ImportError:
     _SCIPY_AVAILABLE = False

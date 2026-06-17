@@ -92,25 +92,33 @@ class HiveAPIDetectorAdapter(PlatformAdapter):
                 if status == 429:
                     print("[HiveAPIDetectorAdapter] 配额/速率限制 (429)，稍后重试")
                 if attempt < self._max_retries - 1:
-                    wait_time = 2 ** attempt
-                    print(f"[HiveAPIDetectorAdapter] HTTP {status} (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试")
+                    wait_time = 2**attempt
+                    print(
+                        f"[HiveAPIDetectorAdapter] HTTP {status} (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试"
+                    )
                     time.sleep(wait_time)
                 else:
                     print("[HiveAPIDetectorAdapter] HTTP 错误，已达最大重试次数，降级为 mock 分数")
             except requests.exceptions.Timeout:
                 if attempt < self._max_retries - 1:
-                    wait_time = 2 ** attempt
-                    print(f"[HiveAPIDetectorAdapter] 超时 (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试")
+                    wait_time = 2**attempt
+                    print(
+                        f"[HiveAPIDetectorAdapter] 超时 (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试"
+                    )
                     time.sleep(wait_time)
                 else:
                     print("[HiveAPIDetectorAdapter] 请求超时，已达最大重试次数，降级为 mock 分数")
             except requests.exceptions.RequestException as e:
                 if attempt < self._max_retries - 1:
-                    wait_time = 2 ** attempt
-                    print(f"[HiveAPIDetectorAdapter] 请求失败 (attempt {attempt+1}/{self._max_retries}): {e}，{wait_time}s 后重试")
+                    wait_time = 2**attempt
+                    print(
+                        f"[HiveAPIDetectorAdapter] 请求失败 (attempt {attempt+1}/{self._max_retries}): {e}，{wait_time}s 后重试"
+                    )
                     time.sleep(wait_time)
                 else:
-                    print(f"[HiveAPIDetectorAdapter] 请求失败，已达最大重试次数: {e}，降级为 mock 分数")
+                    print(
+                        f"[HiveAPIDetectorAdapter] 请求失败，已达最大重试次数: {e}，降级为 mock 分数"
+                    )
             except (KeyError, json.JSONDecodeError, TypeError) as e:
                 print(f"[HiveAPIDetectorAdapter] 响应解析失败: {e}，降级为 mock 分数")
                 break

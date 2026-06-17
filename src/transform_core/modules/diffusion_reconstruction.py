@@ -58,9 +58,9 @@ class DiffusionReconstructionModule(TransformModule):
         dtype = torch.float16 if device == "cuda" else torch.float32
 
         try:
-            pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-                model_path, torch_dtype=dtype
-            ).to(device)
+            pipe = StableDiffusionImg2ImgPipeline.from_pretrained(model_path, torch_dtype=dtype).to(
+                device
+            )
         except Exception as e:
             print(f"[DiffusionReconstructionModule] 模型加载失败: {e}")
             return self._apply_surrogate(img, config)
@@ -73,6 +73,7 @@ class DiffusionReconstructionModule(TransformModule):
         # 简单 Canny 结构引导（使用 PIL FIND_EDGES 作为占位）
         try:
             from PIL import ImageFilter
+
             _ = img.convert("L").filter(ImageFilter.FIND_EDGES)
             # 这里仅做演示，实际可传入 ControlNet
         except Exception:

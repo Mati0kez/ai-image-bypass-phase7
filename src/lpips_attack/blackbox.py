@@ -14,6 +14,7 @@ from PIL import Image
 # 延迟导入 torch，避免无 torch 环境导入失败
 try:
     import torch
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -31,7 +32,9 @@ def _to_pil(t: torch.Tensor) -> Image.Image:
     return Image.fromarray(arr, "RGB")
 
 
-def _clip_perturbation(perturbed: torch.Tensor, original: torch.Tensor, max_norm: float) -> torch.Tensor:
+def _clip_perturbation(
+    perturbed: torch.Tensor, original: torch.Tensor, max_norm: float
+) -> torch.Tensor:
     diff = perturbed - original
     norm = torch.norm(diff.view(diff.shape[0], -1), dim=1, keepdim=True) + 1e-8
     norm = norm.view(-1, 1, 1, 1)

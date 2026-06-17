@@ -40,6 +40,7 @@ def test_adversarial_profile_with_flags():
         assert manifest_path.exists()
 
         import json
+
         manifest = json.loads(manifest_path.read_text())
         families = manifest["method_families"]
         assert "lpips" in families
