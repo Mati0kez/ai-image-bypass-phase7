@@ -1,5 +1,7 @@
 """TransformRegistry - 方法族到 Module 实例的映射表。"""
 
+from __future__ import annotations
+
 from typing import Dict, Tuple
 
 from .module import TransformModule
