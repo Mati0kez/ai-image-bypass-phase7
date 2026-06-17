@@ -8,11 +8,8 @@ import csv
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from benchmark.runner import BenchmarkRunner, BenchmarkConfig
 from benchmark.report import generate_experiment_report
 from benchmark.metrics import wilson_score_interval
-from PIL import Image
-import numpy as np
 
 
 def test_wilson_ci_basic():

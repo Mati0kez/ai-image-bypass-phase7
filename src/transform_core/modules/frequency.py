@@ -3,11 +3,17 @@
 FFT 频域扰动与相位噪声注入。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module
+
+if TYPE_CHECKING:
+    from ..config import TransformConfig
 
 
 class FrequencyModule(TransformModule):

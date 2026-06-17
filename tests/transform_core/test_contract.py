@@ -3,13 +3,11 @@
 import sys
 from pathlib import Path
 
-import pytest
 from PIL import Image
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from transform_core.module import TransformModule
 from transform_core.registry import TRANSFORM_MODULES, METHOD_FAMILIES, _selected_modules
 
 

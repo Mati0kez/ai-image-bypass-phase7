@@ -3,7 +3,6 @@
 用于无 API Key 环境、CI 测试和快速验证。
 """
 
-from typing import Optional
 from PIL import Image
 import numpy as np
 

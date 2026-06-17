@@ -42,7 +42,7 @@ def register_module(module: TransformModule) -> None:
 
 # 导入 modules 包以触发各 Module 的 import-time 自动注册
 # 必须在 register_module 定义之后导入
-from . import modules  # noqa: F401
+from . import modules  # noqa: F401, E402
 
 
 def _selected_modules(profile: str, methods: str | None = None) -> Tuple[str, ...]:

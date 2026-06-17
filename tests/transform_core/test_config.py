@@ -3,12 +3,10 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 # 确保能导入 src/transform_core
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from transform_core.config import TransformConfig, TransformProfile, MetadataMode
+from transform_core.config import TransformConfig
 
 
 def test_transform_config_minimal():

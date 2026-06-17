@@ -3,11 +3,17 @@
 降采样/重建/滤波代理（不调用生成模型）。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module
+
+if TYPE_CHECKING:
+    from ..config import TransformConfig
 
 
 class RegenerationSurrogateModule(TransformModule):

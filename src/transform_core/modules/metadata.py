@@ -4,11 +4,17 @@
 apply 方法返回原图（identity transform）。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module
+
+if TYPE_CHECKING:
+    from ..config import TransformConfig
 
 
 class MetadataModule(TransformModule):

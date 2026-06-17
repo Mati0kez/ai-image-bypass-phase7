@@ -51,7 +51,6 @@ class TransferBlackboxAttackModule(TransformModule):
         # P10.4-2: 代理模型加载与攻击逻辑 (简化 FGSM)
         model_name = getattr(config, "transfer_blackbox_attack_surrogate_model", "resnet50")
         epsilon = getattr(config, "transfer_blackbox_attack_epsilon", 0.03)
-        algorithm = getattr(config, "transfer_blackbox_attack_algorithm", "fgsm")
 
         try:
             # 加载模型 (使用 pretrained=True 以获得 ImageNet 权重)

@@ -5,7 +5,7 @@
 
 import numpy as np
 from PIL import Image
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module

@@ -9,7 +9,6 @@ from detector_loop.loop import DetectorLoop, DetectorLoopConfig
 from detector_loop.detector_interface import DetectorInterface
 from PIL import Image
 import numpy as np
-from unittest.mock import patch
 
 
 class MockDetector(DetectorInterface):

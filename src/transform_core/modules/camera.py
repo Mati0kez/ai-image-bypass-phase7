@@ -7,9 +7,13 @@ from __future__ import annotations
 
 import numpy as np
 from PIL import Image, ImageFilter
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module
+
+if TYPE_CHECKING:
+    from ..config import TransformConfig
 
 
 class CameraModule(TransformModule):

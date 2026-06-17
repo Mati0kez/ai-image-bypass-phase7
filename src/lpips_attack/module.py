@@ -17,7 +17,6 @@ from transform_core.module import LPIPSModule as BaseLPIPSModule
 from transform_core.config import TransformConfig
 
 if TYPE_CHECKING:
-    import torch as torch_types
     from transform_core.strength import StrengthOverride
 
 # 延迟导入 torch/lpips，避免核心包依赖 torch

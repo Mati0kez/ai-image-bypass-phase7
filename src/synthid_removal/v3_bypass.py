@@ -35,7 +35,6 @@ class SynthIDRemovalModule(TransformModule):
         if profile and "carriers" in profile:
             # 真实减法逻辑（简化版）
             carriers = profile.get("carriers", [])
-            magnitudes = profile.get("magnitudes", [])
             phases = profile.get("phases", [])
 
             h, w = magnitude.shape

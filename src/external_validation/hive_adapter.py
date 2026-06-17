@@ -69,7 +69,6 @@ class HiveAPIDetectorAdapter(PlatformAdapter):
         }
         files = {"image": ("image.jpg", buffer, "image/jpeg")}
 
-        last_exception = None
         for attempt in range(self._max_retries):
             try:
                 resp = requests.post(
@@ -92,15 +91,13 @@ class HiveAPIDetectorAdapter(PlatformAdapter):
                     break
                 if status == 429:
                     print("[HiveAPIDetectorAdapter] 配额/速率限制 (429)，稍后重试")
-                last_exception = e
                 if attempt < self._max_retries - 1:
                     wait_time = 2 ** attempt
                     print(f"[HiveAPIDetectorAdapter] HTTP {status} (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试")
                     time.sleep(wait_time)
                 else:
-                    print(f"[HiveAPIDetectorAdapter] HTTP 错误，已达最大重试次数: {e}，降级为 mock 分数")
-            except requests.exceptions.Timeout as e:
-                last_exception = e
+                    print("[HiveAPIDetectorAdapter] HTTP 错误，已达最大重试次数，降级为 mock 分数")
+            except requests.exceptions.Timeout:
                 if attempt < self._max_retries - 1:
                     wait_time = 2 ** attempt
                     print(f"[HiveAPIDetectorAdapter] 超时 (attempt {attempt+1}/{self._max_retries})，{wait_time}s 后重试")
@@ -108,7 +105,6 @@ class HiveAPIDetectorAdapter(PlatformAdapter):
                 else:
                     print("[HiveAPIDetectorAdapter] 请求超时，已达最大重试次数，降级为 mock 分数")
             except requests.exceptions.RequestException as e:
-                last_exception = e
                 if attempt < self._max_retries - 1:
                     wait_time = 2 ** attempt
                     print(f"[HiveAPIDetectorAdapter] 请求失败 (attempt {attempt+1}/{self._max_retries}): {e}，{wait_time}s 后重试")

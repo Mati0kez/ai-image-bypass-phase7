@@ -4,10 +4,9 @@
 统一管理外部平台 API 调用。
 """
 
-import os
 import time
-from typing import Optional
 from dataclasses import dataclass
+from typing import Optional
 from PIL import Image
 
 from .platform_adapter import PlatformAdapter

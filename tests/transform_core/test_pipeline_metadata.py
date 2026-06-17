@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from transform_core.config import TransformConfig
+# TransformConfig 在测试中直接使用字符串路径构造，当前未直接实例化
 
 
 def test_metadata_is_forced_when_mode_is_not_strip():

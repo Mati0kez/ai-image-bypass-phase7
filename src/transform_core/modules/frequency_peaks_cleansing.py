@@ -3,6 +3,8 @@
 在频域 (DCT/FFT) 中识别并抑制代表上采样伪影的特定频率峰值。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
 from typing import Optional, TYPE_CHECKING
@@ -75,7 +77,7 @@ class FrequencyPeaksCleansingModule(TransformModule):
                 freq[mask] = 0
             else: # noise_injection
                 # 注入小幅噪声
-                noise = rng.normal(0, 1, size=freq.shape) * np.abs(freq[mask]) * 0.1
+                noise = rng.normal(0, 1, size=freq.shape) * np.abs(freq[mask]) * 0.1  # noqa: F821
                 freq[mask] = freq[mask] + noise
 
             # 4. 转换回空间域

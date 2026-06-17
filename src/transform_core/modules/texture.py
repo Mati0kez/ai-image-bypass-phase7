@@ -3,11 +3,17 @@
 包含皮肤区域噪声注入和 GLCM/LBP 纹理增强。
 """
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
+from typing import TYPE_CHECKING
 
 from ..module import TransformModule
 from ..registry import register_module
+
+if TYPE_CHECKING:
+    from ..config import TransformConfig
 
 
 class TextureModule(TransformModule):

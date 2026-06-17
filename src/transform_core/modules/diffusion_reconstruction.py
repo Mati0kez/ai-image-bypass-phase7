@@ -73,10 +73,10 @@ class DiffusionReconstructionModule(TransformModule):
         # 简单 Canny 结构引导（使用 PIL FIND_EDGES 作为占位）
         try:
             from PIL import ImageFilter
-            edge_map = img.convert("L").filter(ImageFilter.FIND_EDGES)
+            _ = img.convert("L").filter(ImageFilter.FIND_EDGES)
             # 这里仅做演示，实际可传入 ControlNet
         except Exception:
-            edge_map = None
+            pass
 
         result = img.convert("RGB")
         for i in range(num_passes):
