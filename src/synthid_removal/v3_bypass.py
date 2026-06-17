@@ -1,5 +1,7 @@
 """V3 Bypass 策略 - Multi-resolution Spectral Subtraction。"""
 
+from __future__ import annotations
+
 import numpy as np
 from PIL import Image
 
