@@ -140,8 +140,58 @@ def post_process_image(config: TransformConfig) -> str:
     image.save(config.output_path, "JPEG", **save_params)
     print(f"Saved output: {config.output_path}")
 
-    # 生成 manifest
+    # 生成 manifest（增强版：记录模块详细参数）
     if config.manifest_path:
+        # 收集所有模块相关参数
+        module_params: Dict[str, Any] = {
+            # LPIPS / Detector 相关
+            "lpips_enabled": getattr(config, "lpips_enabled", False),
+            "lpips_blackbox": getattr(config, "lpips_blackbox", False),
+            "lpips_strength": getattr(config, "lpips_strength", None),
+            "lpips_steps": getattr(config, "lpips_steps", None),
+            "lpips_pixel_hybrid_factor": getattr(config, "lpips_pixel_hybrid_factor", None),
+            "detector_feedback": config.detector_feedback,
+            "detector_name": getattr(config, "detector_name", None),
+            "detector_threshold": getattr(config, "detector_threshold", None),
+            "max_iter": getattr(config, "max_iter", None),
+
+            # Watermark / Regeneration
+            "watermark_remove": getattr(config, "watermark_remove", False),
+            "watermark_spectral_mid_high_factor": getattr(
+                config, "watermark_spectral_mid_high_factor", 0.55
+            ),
+            "regeneration_mode": getattr(config, "regeneration_mode", None),
+            "pixel_strength": getattr(config, "pixel_strength", None),
+
+            # P9: Frequency Peaks Cleansing
+            "frequency_peaks_cleansing_enabled": getattr(config, "frequency_peaks_cleansing_enabled", False),
+            "frequency_peaks_cleansing_domain": getattr(config, "frequency_peaks_cleansing_domain", None),
+            "frequency_peaks_cleansing_threshold": getattr(config, "frequency_peaks_cleansing_threshold", None),
+            "frequency_peaks_cleansing_replacement_strategy": getattr(
+                config, "frequency_peaks_cleansing_replacement_strategy", None
+            ),
+            "frequency_peaks_cleansing_attenuation": getattr(
+                config, "frequency_peaks_cleansing_attenuation", None
+            ),
+
+            # P9: PRNU Simulation
+            "prnu_simulation_enabled": getattr(config, "prnu_simulation_enabled", False),
+            "prnu_simulation_mode": getattr(config, "prnu_simulation_mode", None),
+            "prnu_simulation_reference_path": getattr(config, "prnu_simulation_reference_path", None),
+            "prnu_simulation_strength": getattr(config, "prnu_simulation_strength", None),
+
+            # P10.3: Gradient/Edge-aware Perturbation
+            "gradient_edge_aware_perturbation_enabled": getattr(config, "gradient_edge_aware_perturbation_enabled", False),
+            "gradient_edge_aware_perturbation_edge_weight": getattr(config, "gradient_edge_aware_perturbation_edge_weight", None),
+            "gradient_edge_aware_perturbation_smooth_weight": getattr(config, "gradient_edge_aware_perturbation_smooth_weight", None),
+
+            # P10.4: Transfer-based Black-box Attack
+            "transfer_blackbox_attack_enabled": getattr(config, "transfer_blackbox_attack_enabled", False),
+            "transfer_blackbox_attack_surrogate_model": getattr(config, "transfer_blackbox_attack_surrogate_model", None),
+            "transfer_blackbox_attack_algorithm": getattr(config, "transfer_blackbox_attack_algorithm", None),
+            "transfer_blackbox_attack_epsilon": getattr(config, "transfer_blackbox_attack_epsilon", None),
+        }
+
         manifest: Dict[str, Any] = {
             "purpose": "internal_detector_robustness_evaluation",
             "method_families": list(selected),
@@ -149,8 +199,11 @@ def post_process_image(config: TransformConfig) -> str:
             "output_path": str(config.output_path),
             "reference_photo": str(config.real_photo_path) if config.real_photo_path else None,
             "metadata_mode": config.metadata_mode,
+            "quality": config.quality,
+            "seed": config.seed,
             "detector_feedback": config.detector_feedback,
             "detector_scores": detector_scores if config.detector_feedback else None,
+            "module_parameters": module_params,
             "notes": [
                 "detector_feedback records simulated score history; image is not re-transformed per iteration (Phase 7 P2 scope).",
                 "No external platform bypass success claim is produced.",

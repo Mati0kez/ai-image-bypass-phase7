@@ -61,5 +61,7 @@ python run.py --methods frequency_peaks_cleansing --quality 90 --seed 42
 ## 注意事项
 
 - 四个 P9/P10 模块默认不包含在任何 profile 中，必须通过 `--methods` 显式指定。
-- 如果模块需要额外参数（如 PRNU 的 reference image），目前使用模块默认值或自生成指纹。
+- 通过 `--methods` 选中方法族时，脚本会自动设置对应的 `*_enabled` 标志（与 WebUI 行为一致）。
+- 各方法族强度默认值见 [`TEST_SETTINGS.md`](TEST_SETTINGS.md)（与 `TransformConfig` 同步）。
+- PRNU 可选参考图：`--prnu-ref /path/to/ref.jpg`；未指定时使用自生成指纹。
 - 处理完成后直接去 `outputs/` 文件夹取结果图即可。

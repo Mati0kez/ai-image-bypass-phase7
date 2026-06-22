@@ -78,7 +78,8 @@ class GradientEdgeAwarePerturbationModule(TransformModule):
             perturbation = noise * (smooth_weight + edge_weight_map * (edge_weight - smooth_weight))
 
             # 3. 应用扰动
-            cleaned_channel = channel + perturbation * getattr(config, "pixel_strength", 0.01) * 255
+            pixel_strength = getattr(config, "pixel_strength", None) or 0.028
+            cleaned_channel = channel + perturbation * pixel_strength * 255
 
             result_channels.append(cleaned_channel)
 

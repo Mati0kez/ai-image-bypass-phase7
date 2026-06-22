@@ -10,13 +10,32 @@ CLI 测试脚本 - 快速验证任意方法族组合
 import argparse
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-# 确保能导入 src 下的 transform_core
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# 确保能导入 src 下的 transform_core 和根目录的 legacy bypass_ai_detector
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / "src"))
 
 from transform_core.config import TransformConfig
 from transform_core.pipeline import post_process_image
+
+
+def method_enabled_flags(methods: List[str]) -> dict:
+    """显式选中某方法族时，同步设置对应的 enabled 标志（与 WebUI 一致）。"""
+    selected = set(methods)
+    flags = {
+        "frequency_peaks_cleansing_enabled": "frequency_peaks_cleansing" in selected,
+        "prnu_simulation_enabled": "prnu_simulation" in selected,
+        "gradient_edge_aware_perturbation_enabled": "gradient_edge_aware_perturbation" in selected,
+        "transfer_blackbox_attack_enabled": "transfer_blackbox_attack" in selected,
+        "lpips_enabled": "lpips" in selected,
+        "watermark_remove": "watermark" in selected,
+        "diffusion_reconstruction_enabled": "diffusion_reconstruction" in selected,
+    }
+    return flags
+
+
 
 
 def get_output_stem(input_stem: str, methods: List[str]) -> str:
@@ -34,6 +53,7 @@ def process_folder(
     profile: str,
     quality: int,
     seed: int,
+    prnu_ref: Optional[str] = None,
 ):
     """批量处理 images/ 目录下的所有图片"""
     input_dir.mkdir(parents=True, exist_ok=True)
@@ -60,15 +80,21 @@ def process_folder(
 
         print(f"\n处理: {img_file.name} -> {output_path.name}")
 
-        config = TransformConfig(
-            input_path=str(img_file),
-            output_path=str(output_path),
-            manifest_path=str(manifest_path),
-            profile=profile,
-            seed=seed,
-            quality=quality,
-            methods=methods if methods else None,
-        )
+        config_kwargs = {
+            "input_path": str(img_file),
+            "output_path": str(output_path),
+            "manifest_path": str(manifest_path),
+            "profile": profile,
+            "seed": seed,
+            "quality": quality,
+            "methods": methods if methods else None,
+        }
+        if methods:
+            config_kwargs.update(method_enabled_flags(methods))
+        if prnu_ref and "prnu_simulation" in methods:
+            config_kwargs["prnu_simulation_reference_path"] = prnu_ref
+
+        config = TransformConfig(**config_kwargs)
 
         try:
             result_path = post_process_image(config)
@@ -93,6 +119,12 @@ def main():
     )
     parser.add_argument("--quality", type=int, default=90, help="输出 JPEG 质量")
     parser.add_argument("--seed", type=int, default=1234, help="随机种子")
+    parser.add_argument(
+        "--prnu-ref",
+        type=str,
+        default="",
+        help="PRNU 参考图像路径（可选；未指定时使用自生成指纹）",
+    )
 
     args = parser.parse_args()
 
@@ -108,6 +140,7 @@ def main():
         profile=args.profile,
         quality=args.quality,
         seed=args.seed,
+        prnu_ref=args.prnu_ref.strip() or None,
     )
 
     print("\n全部处理完成！结果保存在 outputs/ 目录")

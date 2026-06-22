@@ -1,6 +1,6 @@
 """Frequency Peaks Cleansing 方法族 Module。
 
-在频域 (DCT/FFT) 中识别并抑制代表上采样伪影的特定频率峰值。
+在 8x8 DCT 块或 FFT 高频区域中识别并抑制 GAN 上采样伪影峰值。
 """
 
 from __future__ import annotations
@@ -15,6 +15,8 @@ from ..registry import register_module
 if TYPE_CHECKING:
     from ..config import TransformConfig
     from ..strength import StrengthOverride
+
+_BLOCK = 8
 
 
 class FrequencyPeaksCleansingModule(TransformModule):
@@ -36,77 +38,119 @@ class FrequencyPeaksCleansingModule(TransformModule):
             return img.convert("RGB")
 
         domain = getattr(config, "frequency_peaks_cleansing_domain", "dct")
-        threshold = getattr(config, "frequency_peaks_cleansing_threshold", 0.5)
-        strategy = getattr(config, "frequency_peaks_cleansing_replacement_strategy", "zeroing")
+        threshold = getattr(config, "frequency_peaks_cleansing_threshold", 2.0)
+        strategy = getattr(config, "frequency_peaks_cleansing_replacement_strategy", "attenuate")
+        attenuation = getattr(config, "frequency_peaks_cleansing_attenuation", 0.35)
 
-        return self._apply_local(img, config, domain, threshold, strategy)
-
-    def _apply_local(
-        self,
-        img: Image.Image,
-        config: "TransformConfig",
-        domain: str,
-        threshold: float,
-        strategy: str,
-    ) -> Image.Image:
-        """本地频域峰值清洗实现。"""
         try:
-            from scipy.fftpack import dct, idct
+            if domain == "dct":
+                return self._apply_block_dct(img, threshold, strategy, attenuation, rng)
+            return self._apply_fft_peaks(img, threshold, attenuation, rng)
         except ImportError:
             print("[FrequencyPeaksCleansingModule] scipy 未安装，回退 surrogate")
             return self._apply_surrogate(img, config)
 
+    def _apply_block_dct(
+        self,
+        img: Image.Image,
+        threshold: float,
+        strategy: str,
+        attenuation: float,
+        rng: np.random.Generator,
+    ) -> Image.Image:
+        """8x8 块 DCT 峰值清洗（JPEG 风格，保护 DC 与低频）。"""
+        from scipy.fftpack import dct, idct
+
         arr = np.array(img.convert("RGB")).astype(np.float32)
-        result_channels = []
+        h, w, _ = arr.shape
+        pad_h = ( _BLOCK - h % _BLOCK) % _BLOCK
+        pad_w = (_BLOCK - w % _BLOCK) % _BLOCK
+        if pad_h or pad_w:
+            arr = np.pad(arr, ((0, pad_h), (0, pad_w), (0, 0)), mode="reflect")
+
+        out = np.zeros_like(arr)
+        ph, pw, _ = arr.shape
+
+        u_idx, v_idx = np.meshgrid(np.arange(_BLOCK), np.arange(_BLOCK), indexing="ij")
+        hf_mask_8 = (u_idx + v_idx) >= 4
 
         for c in range(3):
+            channel_out = np.zeros((ph, pw), dtype=np.float32)
             channel = arr[:, :, c]
+            for y in range(0, ph, _BLOCK):
+                for x in range(0, pw, _BLOCK):
+                    block = channel[y : y + _BLOCK, x : x + _BLOCK]
+                    dct_block = dct(dct(block, axis=0, norm="ortho"), axis=1, norm="ortho")
 
-            # 1. 转换到频域
-            if domain == "dct":
-                # DCT 通常在 8x8 块上计算，但为简化，我们计算全局 DCT
-                # 注意：实际 GAN 指纹通常在块级 DCT 中
-                freq = dct(dct(channel, axis=0, norm="ortho"), axis=1, norm="ortho")
-            else:  # fft
-                freq = np.fft.fft2(channel)
-                freq = np.fft.fftshift(freq)
+                    ac_mag = np.abs(dct_block)
+                    ac_hf = ac_mag[hf_mask_8]
+                    if ac_hf.size == 0:
+                        cleaned = block
+                    else:
+                        mean_hf = float(np.mean(ac_hf))
+                        std_hf = float(np.std(ac_hf)) + 1e-8
+                        peak_mask = np.zeros((_BLOCK, _BLOCK), dtype=bool)
+                        peak_mask[hf_mask_8] = ac_mag[hf_mask_8] > (mean_hf + threshold * std_hf)
 
-            # 2. 对数缩放与峰值识别
-            log_spectrum = np.log(np.abs(freq) + 1e-8)
-            mean_spectrum = np.mean(log_spectrum)
+                        if strategy == "zeroing":
+                            dct_block[peak_mask] *= 0.15
+                        elif strategy == "noise_injection":
+                            noise = rng.normal(0, 1, size=dct_block.shape)
+                            dct_block[peak_mask] += noise[peak_mask] * ac_mag[peak_mask] * attenuation * 0.05
+                        else:  # attenuate
+                            dct_block[peak_mask] *= max(0.0, 1.0 - attenuation)
 
-            # 识别峰值：高于均值 + 阈值
-            # 这里简化处理，实际可能需要更复杂的峰值检测算法
-            mask = log_spectrum > (mean_spectrum + threshold)
+                        cleaned = idct(idct(dct_block, axis=0, norm="ortho"), axis=1, norm="ortho")
 
-            # 3. 峰值抑制
-            if strategy == "zeroing":
-                freq[mask] = 0
-            else:  # noise_injection
-                # 注入小幅噪声
-                noise = rng.normal(0, 1, size=freq.shape) * np.abs(freq[mask]) * 0.1  # noqa: F821
-                freq[mask] = freq[mask] + noise
+                    channel_out[y : y + _BLOCK, x : x + _BLOCK] = cleaned
+            out[:, :, c] = channel_out
 
-            # 4. 转换回空间域
-            if domain == "dct":
-                cleaned_channel = idct(idct(freq, axis=0, norm="ortho"), axis=1, norm="ortho")
-            else:
-                cleaned_channel = np.fft.ifftshift(freq)
-                cleaned_channel = np.fft.ifft2(cleaned_channel)
-                cleaned_channel = np.real(cleaned_channel)
+        out = out[:h, :w, :]
+        out = np.clip(out, 0, 255).astype(np.uint8)
+        return Image.fromarray(out, "RGB")
 
-            result_channels.append(cleaned_channel)
+    def _apply_fft_peaks(
+        self,
+        img: Image.Image,
+        threshold: float,
+        attenuation: float,
+        rng: np.random.Generator,
+    ) -> Image.Image:
+        """FFT 高频峰值衰减（仅处理中高频，保护低频内容）。"""
+        arr = np.array(img.convert("RGB")).astype(np.float32)
+        rows, cols = arr.shape[:2]
+        y_grid, x_grid = np.ogrid[:rows, :cols]
+        cy, cx = rows // 2, cols // 2
+        dist = np.sqrt((y_grid - cy) ** 2 + (x_grid - cx) ** 2)
+        dist_norm = dist / max(float(dist.max()), 1.0)
+        low_freq = dist_norm < 0.12
+        mid_high = (~low_freq) & (dist_norm < 0.85)
 
-        result_arr = np.stack(result_channels, axis=2)
-        result_arr = np.clip(result_arr, 0, 255).astype(np.uint8)
+        result = arr.copy()
+        for c in range(3):
+            channel = arr[:, :, c]
+            shifted = np.fft.fftshift(np.fft.fft2(channel))
+            magnitude = np.abs(shifted)
+            phase = np.angle(shifted)
+            log_mag = np.log(magnitude + 1e-8)
+            region = log_mag[mid_high]
+            if region.size == 0:
+                continue
+            peak_mask = np.zeros_like(magnitude, dtype=bool)
+            peak_mask[mid_high] = log_mag[mid_high] > (
+                float(np.mean(region)) + threshold * float(np.std(region))
+            )
+            magnitude[peak_mask] *= max(0.0, 1.0 - attenuation)
+            rebuilt = magnitude * np.exp(1j * phase)
+            result[:, :, c] = np.real(np.fft.ifft2(np.fft.ifftshift(rebuilt)))
 
-        return Image.fromarray(result_arr, "RGB")
+        result = np.clip(result, 0, 255).astype(np.uint8)
+        return Image.fromarray(result, "RGB")
 
     def _apply_surrogate(self, img: Image.Image, config: "TransformConfig") -> Image.Image:
-        """代理模式（占位实现）。"""
-        print("[FrequencyPeaksCleansingModule] surrogate 模式（占位），返回原图")
-        return img.convert("RGB")
+        """代理模式：轻量 FFT 高频整形。"""
+        rng = np.random.default_rng(getattr(config, "seed", None))
+        return self._apply_fft_peaks(img, threshold=2.0, attenuation=0.25, rng=rng)
 
 
-# import-time 自动注册
 register_module(FrequencyPeaksCleansingModule())

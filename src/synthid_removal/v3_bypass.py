@@ -23,7 +23,9 @@ class SynthIDRemovalModule(TransformModule):
     def name(self) -> str:
         return "watermark"
 
-    def _fft_subtract(self, channel: np.ndarray, profile: dict) -> np.ndarray:
+    def _fft_subtract(
+        self, channel: np.ndarray, profile: dict, mid_high_factor: float = 0.55
+    ) -> np.ndarray:
         """V3 Bypass：基于 codebook 的多分辨率相位相干频谱减法。
 
         如果 profile 包含 carriers/magnitudes/phases，则进行针对性减法；
@@ -48,8 +50,14 @@ class SynthIDRemovalModule(TransformModule):
                     reduction = 0.8 if coherence > 0.5 else 0.3
                     magnitude[y, x] *= 1 - reduction
         else:
-            # 回退：全局衰减
-            magnitude *= 0.7
+            # 回退：仅衰减中高频（保护低频内容）
+            rows, cols = magnitude.shape
+            y_grid, x_grid = np.ogrid[:rows, :cols]
+            cy, cx = rows // 2, cols // 2
+            dist = np.sqrt((y_grid - cy) ** 2 + (x_grid - cx) ** 2)
+            dist_norm = dist / max(float(dist.max()), 1.0)
+            mid_high = (dist_norm >= 0.12) & (dist_norm < 0.85)
+            magnitude[mid_high] *= mid_high_factor
 
         f_ishift = np.fft.ifftshift(magnitude * np.exp(1j * phase))
         img_back = np.fft.ifft2(f_ishift)
@@ -75,8 +83,12 @@ class SynthIDRemovalModule(TransformModule):
             if res:
                 profile = self.codebook.get_profile(res)
 
+        mid_high_factor = getattr(config, "watermark_spectral_mid_high_factor", 0.55)
+
         for c in range(3):
-            result[:, :, c] = self._fft_subtract(arr[:, :, c], profile or {})
+            result[:, :, c] = self._fft_subtract(
+                arr[:, :, c], profile or {}, mid_high_factor=mid_high_factor
+            )
 
         result = np.clip(result, 0, 255).astype(np.uint8)
         return Image.fromarray(result, "RGB")

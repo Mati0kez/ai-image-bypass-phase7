@@ -89,9 +89,16 @@ class LPIPSModule(BaseLPIPSModule):
                     img, self._get_lpips_model(self._get_device(config)), det_callable, config
                 )
             except Exception as e:
-                print(f"[LPIPSModule] blackbox 路径失败，回退梯度路径: {e}")
+                print(f"[LPIPSModule] blackbox 路径失败，回退 surrogate 攻击: {e}")
 
-        # 原有梯度路径（纯 LPIPS 或 detector_feedback=False）
+        use_detector = getattr(config, "detector_feedback", False)
+        if not use_detector:
+            try:
+                return self._apply_surrogate_attack(img, config)
+            except Exception as e:
+                print(f"[LPIPSModule] surrogate 攻击失败，回退梯度路径: {e}")
+
+        # 梯度路径：detector_feedback=True 时 LPIPS + detector 联合优化
         device = self._get_device(config)
         lpips_model = self._get_lpips_model(device)
 
@@ -106,27 +113,23 @@ class LPIPSModule(BaseLPIPSModule):
         optimizer = torch.optim.Adam([perturbed], lr=lr)
 
         detector_weight = getattr(config, "detector_weight", 1.0)
-        use_detector = getattr(config, "detector_feedback", False)
 
         for _ in range(steps):
             optimizer.zero_grad()
             lpips_loss = lpips_model(img_tensor, perturbed)
 
-            if use_detector:
-                if self.detector is not None:
-                    perturbed_pil = Image.fromarray(
-                        (perturbed.detach().cpu().squeeze(0).permute(1, 2, 0).numpy() * 255).astype(
-                            np.uint8
-                        ),
-                        "RGB",
-                    )
-                    detector_score = self.detector.score(perturbed_pil)
-                else:
-                    detector_score = 0.5
-
-                loss = lpips_loss + detector_weight * detector_score
+            if self.detector is not None:
+                perturbed_pil = Image.fromarray(
+                    (perturbed.detach().cpu().squeeze(0).permute(1, 2, 0).numpy() * 255).astype(
+                        np.uint8
+                    ),
+                    "RGB",
+                )
+                detector_score = self.detector.score(perturbed_pil)
             else:
-                loss = lpips_loss
+                detector_score = 0.5
+
+            loss = lpips_loss + detector_weight * detector_score
 
             loss.backward()
             optimizer.step()
@@ -142,3 +145,56 @@ class LPIPSModule(BaseLPIPSModule):
         out = perturbed.detach().cpu().squeeze(0).permute(1, 2, 0).numpy()
         out = np.clip(out * 255, 0, 255).astype(np.uint8)
         return Image.fromarray(out, "RGB")
+
+    def _apply_surrogate_attack(self, img: Image.Image, config: TransformConfig) -> Image.Image:
+        """无 detector 闭环时，用 ResNet50 代理模型做 PGD 扰动（全分辨率）。"""
+        import torch.nn.functional as F
+        import torchvision.models as models
+
+        device = self._get_device(config)
+        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT).to(device).eval()
+
+        strength = getattr(config, "lpips_strength", 0.06)
+        steps = max(getattr(config, "lpips_steps", 25), 1)
+        epsilon = max(strength, 0.03)
+        hybrid_factor = getattr(config, "lpips_pixel_hybrid_factor", 0.45)
+
+        orig = torch.from_numpy(np.array(img.convert("RGB"))).float() / 255.0
+        orig = orig.permute(2, 0, 1).unsqueeze(0).to(device)
+        x = orig.clone().detach()
+
+        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
+
+        with torch.no_grad():
+            resized0 = F.interpolate(orig, size=(224, 224), mode="bilinear", align_corners=False)
+            orig_class = model((resized0 - mean) / std).argmax(dim=1)
+
+        for _ in range(steps):
+            x = x.detach().requires_grad_(True)
+            resized = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+            logits = model((resized - mean) / std)
+            loss = F.cross_entropy(logits, orig_class)
+            loss.backward()
+            with torch.no_grad():
+                step = (epsilon / steps) * x.grad.sign()
+                x = x + step
+                x = torch.max(torch.min(x, orig + epsilon), orig - epsilon)
+                x = torch.clamp(x, 0.0, 1.0)
+
+        out = (x.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+        result = Image.fromarray(out, "RGB")
+
+        # 叠加轻量像素扰动，避免仅 ResNet 代理梯度时几乎无可见/可检测变化
+        try:
+            from bypass_ai_detector import _from_array, _to_array, add_pixel_perturbation
+
+            arr = _to_array(result)
+            arr = add_pixel_perturbation(
+                arr, strength * hybrid_factor, seed=getattr(config, "seed", None)
+            )
+            result = _from_array(arr)
+        except Exception:
+            pass
+
+        return result

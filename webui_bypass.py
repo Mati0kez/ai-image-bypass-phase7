@@ -36,6 +36,7 @@ def process_image(
     freq_domain,
     freq_threshold,
     freq_strategy,
+    freq_attenuation,
     prnu_mode,
     prnu_strength,
     prnu_ref_image,
@@ -92,9 +93,11 @@ def process_image(
                 "prnu_simulation",
                 "gradient_edge_aware_perturbation",
                 "transfer_blackbox_attack",
+                "lpips",
+                "watermark",
             }
 
-            use_new_pipeline = any(m in p9_p10_modules for m in selected_methods)
+            use_new_pipeline = bool(selected_methods) or lpips_enabled
 
             if use_new_pipeline:
                 # 构造 TransformConfig 并调用新 Pipeline
@@ -116,11 +119,17 @@ def process_image(
                     metadata_mode=metadata_mode,
                     real_photo_path=real_photo_path,
                     methods=selected_methods,
+                    lpips_enabled=lpips_enabled or "lpips" in selected_methods,
+                    lpips_blackbox=lpips_blackbox,
+                    lpips_strength=float(lpips_strength),
+                    lpips_steps=int(lpips_steps),
+                    watermark_remove="watermark" in selected_methods,
                     # P9/P10 特定参数
                     frequency_peaks_cleansing_enabled="frequency_peaks_cleansing" in selected_methods,
                     frequency_peaks_cleansing_domain=freq_domain,
                     frequency_peaks_cleansing_threshold=float(freq_threshold),
                     frequency_peaks_cleansing_replacement_strategy=freq_strategy,
+                    frequency_peaks_cleansing_attenuation=float(freq_attenuation),
                     prnu_simulation_enabled="prnu_simulation" in selected_methods,
                     prnu_simulation_mode=prnu_mode,
                     prnu_simulation_strength=float(prnu_strength),
@@ -189,7 +198,7 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
             noise = gr.Slider(0.0, 1.3, 0.78, label="噪声强度（推荐 0.2~0.4）")
             skin = gr.Slider(0.0, 1.0, 0.72, label="局部纹理强度（推荐 0.2~0.4）")
             fft = gr.Slider(0.0, 0.8, 0.45, label="FFT 频域强度（推荐 0.1~0.3）")
-            pixel = gr.Slider(0.0, 0.06, 0.025, label="像素微扰强度（推荐 0.005~0.015）")
+            pixel = gr.Slider(0.0, 0.06, 0.028, label="像素微扰强度（推荐 0.005~0.015）")
             glcm = gr.Slider(0.0, 1.0, 0.6, label="GLCM/LBP 纹理强度（推荐 0.2~0.4）")
             quality = gr.Slider(75, 95, 86, step=1, label="JPEG 质量（推荐 88~95）")
 
@@ -276,12 +285,17 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
                 # === P9/P10 新模块参数控件 ===
                 with gr.Accordion("频谱峰值清洗参数 (P9)", open=False):
                     freq_domain = gr.Dropdown(choices=["dct", "fft"], value="dct", label="频域类型")
-                    freq_threshold = gr.Slider(0.1, 1.0, 0.5, label="峰值阈值")
-                    freq_strategy = gr.Dropdown(choices=["zeroing", "noise_injection"], value="zeroing", label="替换策略")
+                    freq_threshold = gr.Slider(0.5, 4.0, 2.0, label="峰值阈值（标准差倍数）")
+                    freq_strategy = gr.Dropdown(
+                        choices=["attenuate", "zeroing", "noise_injection"],
+                        value="attenuate",
+                        label="替换策略",
+                    )
+                    freq_attenuation = gr.Slider(0.1, 0.8, 0.35, label="峰值衰减强度")
 
                 with gr.Accordion("PRNU 模拟/去除参数 (P9)", open=False):
                     prnu_mode = gr.Dropdown(choices=["extract_add", "remove"], value="extract_add", label="模式")
-                    prnu_strength = gr.Slider(0.1, 1.0, 0.5, label="强度")
+                    prnu_strength = gr.Slider(0.1, 1.0, 0.75, label="强度")
                     prnu_ref_image = gr.Image(type="filepath", label="参考图像（可选，用于真实 PRNU 提取）")
 
                 with gr.Accordion("边缘感知扰动参数 (P10.3)", open=False):
@@ -307,8 +321,8 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
                 lpips_enabled = gr.Checkbox(label="启用 LPIPS 非语义攻击", value=False)
                 lpips_blackbox = gr.Checkbox(label="使用黑盒优化（detector_feedback 时推荐）", value=True)
                 max_iter = gr.Slider(1, 15, 3, step=1, label="最大迭代次数")
-                lpips_strength = gr.Slider(0.001, 0.1, 0.005, label="LPIPS 扰动强度")
-                lpips_steps = gr.Slider(5, 30, 10, step=1, label="LPIPS 迭代步数")
+                lpips_strength = gr.Slider(0.001, 0.1, 0.06, label="LPIPS 扰动强度")
+                lpips_steps = gr.Slider(5, 30, 25, step=1, label="LPIPS 迭代步数")
 
             btn = gr.Button("生成内部评估变体", variant="primary")
 
@@ -397,6 +411,7 @@ with gr.Blocks(title="AI 图片检测鲁棒性评估工具", theme=gr.themes.Sof
             freq_domain,
             freq_threshold,
             freq_strategy,
+            freq_attenuation,
             prnu_mode,
             prnu_strength,
             prnu_ref_image,

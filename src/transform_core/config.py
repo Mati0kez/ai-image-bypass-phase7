@@ -28,10 +28,10 @@ class TransformConfig:
     seed: Optional[int] = None
     quality: int = 95
 
-    # 各方法族强度（None 表示该族不启用）
+    # 各方法族强度（None 时各 Module 使用下方 verified 默认值）
     noise_strength: Optional[float] = None
     fft_strength: Optional[float] = None
-    pixel_strength: Optional[float] = None
+    pixel_strength: Optional[float] = 0.028
     glcm_strength: Optional[float] = None
     skin_strength: Optional[float] = None
 
@@ -41,8 +41,8 @@ class TransformConfig:
 
     # 扩展点（未来模块使用）
     lpips_enabled: bool = False
-    lpips_strength: float = 0.01
-    lpips_steps: int = 10
+    lpips_strength: float = 0.06
+    lpips_steps: int = 25
     lpips_blackbox: bool = False  # 启用黑盒优化（SPSA 等），适合 detector_feedback=True
     lpips_blackbox_method: str = "spsa"  # spsa | nes
     detector_weight: float = 1.0  # LPIPS + Detector 联合优化时的 detector 分数权重
@@ -51,6 +51,7 @@ class TransformConfig:
     methods: Optional[list[str]] = None
 
     watermark_remove: bool = False
+    watermark_spectral_mid_high_factor: float = 0.55
     detector_feedback: bool = False
     detector_name: str = "local:resnet50"
     detector_threshold: float = 0.5
@@ -78,14 +79,15 @@ class TransformConfig:
     # Frequency Peaks Cleansing (频谱峰值清洗) 扩展参数
     frequency_peaks_cleansing_enabled: bool = False
     frequency_peaks_cleansing_domain: str = "dct"  # dct | fft
-    frequency_peaks_cleansing_threshold: float = 0.5
-    frequency_peaks_cleansing_replacement_strategy: str = "zeroing"  # zeroing | noise_injection
+    frequency_peaks_cleansing_threshold: float = 2.0
+    frequency_peaks_cleansing_replacement_strategy: str = "attenuate"  # attenuate | zeroing | noise_injection
+    frequency_peaks_cleansing_attenuation: float = 0.35
 
     # PRNU Simulation / Removal (传感器指纹模拟/去除) 扩展参数
     prnu_simulation_enabled: bool = False
     prnu_simulation_mode: str = "extract_add"  # extract_add | remove
     prnu_simulation_reference_path: Optional[str] = None
-    prnu_simulation_strength: float = 0.5
+    prnu_simulation_strength: float = 0.75
 
     # Gradient/Edge-aware Perturbation (梯度/边缘感知扰动) 扩展参数
     gradient_edge_aware_perturbation_enabled: bool = False
@@ -97,6 +99,9 @@ class TransformConfig:
     transfer_blackbox_attack_surrogate_model: str = "resnet50"
     transfer_blackbox_attack_algorithm: str = "fgsm"  # fgsm | pgd
     transfer_blackbox_attack_epsilon: float = 0.03
+
+    # LPIPS 无 detector 闭环时的混合扰动系数（ResNet PGD 之后叠加 pixel perturbation）
+    lpips_pixel_hybrid_factor: float = 0.45
 
     # 相机模拟细粒度开关
     camera_sim: Dict[str, Any] = field(
