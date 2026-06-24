@@ -10,7 +10,7 @@
 - **WebUI** 已集成 P9/P10 四模块参数面板 + LPIPS/水印/重生成勾选
 - **verified 默认参数**已写入 `TransformConfig`（见 `cli_test/TEST_SETTINGS.md`）
 - **外部检测验证**：camera / noise / texture 单项降幅约 20%；其余方法族小幅有效（详见飞书 Wiki 第 4 节模板）
-- 文档：[用户使用指南](docs/USER_GUIDE.md) · [单项测试参数](cli_test/TEST_SETTINGS.md) · [Wiki 表格模板](docs/LARK_WIKI_SECTION4_TABLE.md)
+- 文档：[用户使用指南](docs/USER_GUIDE.md) · [单项测试参数](cli_test/TEST_SETTINGS.md) · [Wiki 表格模板](docs/LARK_WIKI_SECTION4_TABLE.md) · [GitHub 参考项目](docs/GITHUB_REFERENCES.md)
 
 ## 能力成熟度矩阵
 
@@ -120,7 +120,8 @@ src/
 cli_test/                    # 单方法族测试工作区（images/ outputs/ run.py）
 docs/
 ├── USER_GUIDE.md            # WebUI + CLI 完整指南
-└── LARK_WIKI_SECTION4_TABLE.md  # 15 项单项测试表（飞书粘贴用）
+├── LARK_WIKI_SECTION4_TABLE.md  # 15 项单项测试表（飞书粘贴用）
+└── GITHUB_REFERENCES.md     # 各方法族 GitHub 高 star 参考项目
 tests/
 webui_bypass.py              # Gradio WebUI 入口
 bypass_ai_detector.py        # Legacy CLI 入口
@@ -134,6 +135,7 @@ bypass_ai_detector.py        # Legacy CLI 入口
 | [cli_test/README.md](cli_test/README.md) | `cli_test/` 用法 |
 | [cli_test/TEST_SETTINGS.md](cli_test/TEST_SETTINGS.md) | verified 默认参数 |
 | [docs/LARK_WIKI_SECTION4_TABLE.md](docs/LARK_WIKI_SECTION4_TABLE.md) | 单项测试效果记录表 |
+| [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md) | 15 项方法族 GitHub 参考项目（高 star） |
 
 ## 架构概览
 
