@@ -42,23 +42,25 @@
 
 ## 方法族一览（15 项）
 
-| CLI `--methods` | 类别 | 说明 |
-|---|---|---|
-| `metadata` | 基础 | EXIF 注入/剥离 |
-| `encoding` | 基础 | JPEG、几何与色彩变换 |
-| `noise` | 基础 | 高斯噪声 + 像素微扰 |
-| `frequency` | 基础 | FFT 频域扰动 |
-| `texture` | 基础 | GLCM/LBP 纹理整形 |
-| `camera` | 基础 | 相机/重拍模拟 |
-| `regeneration_surrogate` | 重生成 | 代理重生成 |
-| `regeneration` | 重生成 | 真实 img2img（需模型） |
-| `lpips` | 对抗 | LPIPS / ResNet 代理攻击 |
-| `watermark` | 对抗 | SynthID 频谱去除 |
-| `frequency_peaks_cleansing` | P9/P10 | 频谱峰值清洗 |
-| `prnu_simulation` | P9/P10 | PRNU 模拟/去除 |
-| `gradient_edge_aware_perturbation` | P10.3 | 边缘感知扰动 |
-| `transfer_blackbox_attack` | P10.4 | 迁移黑盒攻击 |
-| `diffusion_reconstruction` | P9 | 扩散重建（SynthID） |
+| CLI `--methods` | 类别 | 说明 | GitHub 参考项目（高 star） |
+|---|---|---|---|
+| `metadata` | 基础 | EXIF 注入/剥离 | [reverse-SynthID](https://github.com/aloshdenny/reverse-SynthID) · [remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) |
+| `encoding` | 基础 | JPEG、几何与色彩变换 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) |
+| `noise` | 基础 | 高斯噪声 + 像素微扰 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [foolbox](https://github.com/bethgelab/foolbox) |
+| `frequency` | 基础 | FFT 频域扰动 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [reverse-SynthID](https://github.com/aloshdenny/reverse-SynthID) |
+| `texture` | 基础 | GLCM/LBP 纹理整形 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [ArtificialGANFingerprints](https://github.com/ningyu1991/ArtificialGANFingerprints) |
+| `camera` | 基础 | 相机/重拍模拟 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [Moire_Attack](https://github.com/Dantong88/Moire_Attack) |
+| `regeneration_surrogate` | 重生成 | 代理重生成 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [ai-watermark](https://github.com/andrekassis/ai-watermark) |
+| `regeneration` | 重生成 | 真实 img2img（需模型） | [Synthid-Bypass](https://github.com/00quebec/Synthid-Bypass) · [diffusers](https://github.com/huggingface/diffusers) |
+| `lpips` | 对抗 | LPIPS / ResNet 代理攻击 | [PerceptualSimilarity](https://github.com/richzhang/PerceptualSimilarity) · [ai-watermark](https://github.com/andrekassis/ai-watermark) |
+| `watermark` | 对抗 | SynthID 频谱去除 | [reverse-SynthID](https://github.com/aloshdenny/reverse-SynthID) · [remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) |
+| `frequency_peaks_cleansing` | P9/P10 | 频谱峰值清洗 | [ai-watermark](https://github.com/andrekassis/ai-watermark) · [reverse-SynthID](https://github.com/aloshdenny/reverse-SynthID) |
+| `prnu_simulation` | P9/P10 | PRNU 模拟/去除 | [prnu-python](https://github.com/polimi-ispl/prnu-python) · [multiscale-prnu](https://github.com/pkorus/multiscale-prnu) |
+| `gradient_edge_aware_perturbation` | P10.3 | 边缘感知扰动 | [foolbox](https://github.com/bethgelab/foolbox) · [cleverhans](https://github.com/cleverhans-lab/cleverhans) |
+| `transfer_blackbox_attack` | P10.4 | 迁移黑盒攻击 | [TransferAttack](https://github.com/Trustworthy-AI-Group/TransferAttack) · [foolbox](https://github.com/bethgelab/foolbox) |
+| `diffusion_reconstruction` | P9 | 扩散重建（SynthID） | [Synthid-Bypass](https://github.com/00quebec/Synthid-Bypass) · [diffusers](https://github.com/huggingface/diffusers) |
+
+完整列表与 star 数见 [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md)。
 
 ## 快速开始
 
