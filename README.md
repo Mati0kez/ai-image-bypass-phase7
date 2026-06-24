@@ -42,7 +42,7 @@
 
 ## 方法族一览（15 项）
 
-| CLI `--methods` | 类别 | 说明 | GitHub 参考项目（高 star） |
+| CLI `--methods` | 类别 | 说明 | GitHub 参考项目 |
 |---|---|---|---|
 | `metadata` | 基础 | EXIF 注入/剥离 | [reverse-SynthID](https://github.com/aloshdenny/reverse-SynthID) · [remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) |
 | `encoding` | 基础 | JPEG、几何与色彩变换 | [Image-Detection-Bypass-Utility](https://github.com/PurinNyova/Image-Detection-Bypass-Utility) · [remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) |
@@ -60,7 +60,7 @@
 | `transfer_blackbox_attack` | P10.4 | 迁移黑盒攻击 | [TransferAttack](https://github.com/Trustworthy-AI-Group/TransferAttack) · [foolbox](https://github.com/bethgelab/foolbox) |
 | `diffusion_reconstruction` | P9 | 扩散重建（SynthID） | [Synthid-Bypass](https://github.com/00quebec/Synthid-Bypass) · [diffusers](https://github.com/huggingface/diffusers) |
 
-完整列表与 star 数见 [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md)。
+完整列表见 [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md)。
 
 ## 快速开始
 
@@ -123,7 +123,7 @@ cli_test/                    # 单方法族测试工作区（images/ outputs/ ru
 docs/
 ├── USER_GUIDE.md            # WebUI + CLI 完整指南
 ├── LARK_WIKI_SECTION4_TABLE.md  # 15 项单项测试表（飞书粘贴用）
-└── GITHUB_REFERENCES.md     # 各方法族 GitHub 高 star 参考项目
+└── GITHUB_REFERENCES.md     # 各方法族 GitHub 参考项目
 tests/
 webui_bypass.py              # Gradio WebUI 入口
 bypass_ai_detector.py        # Legacy CLI 入口
@@ -137,7 +137,7 @@ bypass_ai_detector.py        # Legacy CLI 入口
 | [cli_test/README.md](cli_test/README.md) | `cli_test/` 用法 |
 | [cli_test/TEST_SETTINGS.md](cli_test/TEST_SETTINGS.md) | verified 默认参数 |
 | [docs/LARK_WIKI_SECTION4_TABLE.md](docs/LARK_WIKI_SECTION4_TABLE.md) | 单项测试效果记录表 |
-| [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md) | 15 项方法族 GitHub 参考项目（高 star） |
+| [docs/GITHUB_REFERENCES.md](docs/GITHUB_REFERENCES.md) | 15 项方法族 GitHub 参考项目 |
 
 ## 架构概览
 
