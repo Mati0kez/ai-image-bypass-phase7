@@ -1,146 +1,162 @@
 # AI Image Detection Bypass Framework
 
-模块化对抗评估框架，面向**内部鲁棒性评估**与**实验性对抗能力**研究。提供 TransformConfig 管道、Benchmark/Experiment 评估链路与可选的外部平台验证接口。
+模块化对抗评估框架，面向**内部鲁棒性评估**与**实验性对抗能力**研究。提供 TransformConfig 管道、WebUI/CLI 测试入口、Benchmark/Experiment 评估链路与可选的外部平台验证接口。
 
 > 能力成熟度见下表。未标注为「可用」的能力不应作为生产级对抗验收依据。
+
+## 当前进度（2026-06）
+
+- **15 项方法族**可单项 CLI 测试（`cli_test/run.py --methods <name>`），自动同步 `*_enabled` 标志
+- **WebUI** 已集成 P9/P10 四模块参数面板 + LPIPS/水印/重生成勾选
+- **verified 默认参数**已写入 `TransformConfig`（见 `cli_test/TEST_SETTINGS.md`）
+- **外部检测验证**：camera / noise / texture 单项降幅约 20%；其余方法族小幅有效（详见飞书 Wiki 第 4 节模板）
+- 文档：[用户使用指南](docs/USER_GUIDE.md) · [单项测试参数](cli_test/TEST_SETTINGS.md) · [Wiki 表格模板](docs/LARK_WIKI_SECTION4_TABLE.md)
 
 ## 能力成熟度矩阵
 
 | 功能项 | 成熟度 | 说明 |
 |---|---|---|
-| TransformConfig + TransformModule + Registry | 可用 | 核心配置与注册表可用；支持 adversarial profile（lpips+watermark+regeneration） |
-| 7 个基础方法族 | 可用 | metadata/encoding/noise/frequency/texture/camera/regeneration_surrogate |
+| TransformConfig + TransformModule + Registry | 可用 | 核心配置与注册表；manifest 记录完整 module_parameters |
+| 15 个方法族（单项 CLI） | 可用 | 见下方「方法族一览」；`cli_test/` 快速验证 |
 | Metadata / EXIF | 可用 | copy/strip/synthetic；无 C2PA/provenance |
-| Encoding / JPEG / resize | 可用 | 本地鲁棒性变换，非 detector 优化 |
-| Noise / pixel perturbation | 可用 | 固定强度扰动，非自适应攻击 |
-| Frequency / FFT | 可用 | FFT 代理扰动，无频域目标优化 |
-| Texture / GLCM-LBP | 可用 | GLCM/LBP-inspired 代理变换 |
-| Camera / recapture | 实验性 | Bayer/moire 可选；镜头畸变为占位 |
-| Regeneration surrogate | 可用 | `full` profile 默认使用代理重生成 |
-| 真实 img2img regeneration | 实验性 | local diffusers 路径需 torch+模型；remote 未完整实现 |
-| Detector-in-the-Loop | 实验性 | 真实闭环结构（detector.score + strength 动态调整 + 图像迭代）；mock 分数可用 |
-| Hive 外部验证 | 实验性 | HTTP 客户端已实现；需 API key 做真实 e2e |
-| LPIPS 非语义攻击 | 可用（黑盒路径） | 需 torch；支持黑盒优化（SPSA），`detector_feedback=True` 时自动启用；梯度路径保留 |
-| SynthID / watermark removal | 实验性 | 简化 FFT 策略 + 新增 diffusion_reconstruction（扩散重建） |
-| Frequency Peaks Cleansing | 实验性 | 频谱峰值识别与抑制，精确对抗 GAN Fingerprint |
-| Gradient/Edge-aware Perturbation | 实验性 | 边缘感知扰动，精确对抗 Gradient Analysis |
-| Transfer-based Black-box Attack | 实验性 | 利用代理模型生成迁移性对抗样本，针对 ML Detection |
-| Benchmark / Experiment | 可用 | 报告生成、Wilson CI、失败案例导出 |
+| Encoding / JPEG / resize | 可用 | 本地鲁棒性变换 |
+| Noise / pixel perturbation | 可用 | 单项测试效果较好 |
+| Frequency / FFT | 可用 | FFT 频域扰动 |
+| Texture / GLCM-LBP | 可用 | 单项测试效果较好 |
+| Camera / recapture | 可用 | 相机管线 + 多轮 JPEG；单项测试效果较好 |
+| Regeneration surrogate | 可用 | 代理重生成（无生成模型） |
+| 真实 img2img regeneration | 实验性 | 需 torch+diffusers+模型路径；否则回退 surrogate |
+| LPIPS 非语义攻击 | 实验性 | 无 detector 时用 ResNet50 PGD + 像素混合；需 torch |
+| SynthID / watermark removal | 实验性 | V3 中高频频谱衰减；无 codebook 时回退策略 |
+| Frequency Peaks Cleansing | 实验性 | 8×8 DCT 峰值衰减（已修复全局 DCT 纯黑图问题） |
+| PRNU Simulation/Removal | 实验性 | 支持参考图提取；无参考图时自生成指纹 |
+| Gradient/Edge-aware Perturbation | 实验性 | 边缘感知扰动 |
+| Transfer-based Black-box Attack | 实验性 | FGSM/PGD + ResNet；需 torch；注意输出尺寸 |
+| Diffusion Reconstruction | 实验性 | 需 diffusers + 模型；否则 surrogate no-op |
+| Detector-in-the-Loop | 实验性 | 真实闭环结构；mock/真实 Adapter 均支持 |
+| Hive 外部验证 | 实验性 | HTTP 客户端；需 API key |
+| Benchmark / Experiment | 可用 | Wilson CI、失败案例导出 |
+| WebUI | 可用 | Gradio；方法族多选 + P9/P10 参数 + LPIPS 控件 |
 | CLI 打包入口 | 可用 | `bypass-ai-detector`、`benchmark` |
-| WebUI MVP | 实验性 | 基础 Gradio；无 LPIPS/水印/DIL 等高级控件 |
+| `cli_test/` 工作区 | 可用 | 单方法族批量测试 + manifest |
 
-**成熟度定义**：**可用** = 无 torch 可跑且有测试；**实验性** = 接口存在、部分路径可用或需可选依赖；**占位** = 骨架/模拟逻辑。
+## 方法族一览（15 项）
 
-## 功能特性
-
-- **模块化变换管道**：`TransformConfig` + `TransformModule` 注册表，7 种核心方法族。
-- **Detector-in-the-Loop**（实验性）：`detector_feedback=True` 触发真实闭环（detector.score + StrengthOverride 迭代 + 图像更新），mock/真实 Adapter 均支持。
-- **SynthID 水印移除**（占位）：`synthid_removal` 子包提供实验性 SpectralCodebook + V3 策略。
-- **Frequency Peaks Cleansing**（实验性）：在频域中识别并抑制代表上采样伪影的特定峰值，精确对抗 GAN Fingerprint。
-- **Gradient/Edge-aware Perturbation**（实验性）：边缘感知扰动，精确对抗 Gradient Analysis。
-- **Transfer-based Black-box Attack**（实验性）：利用代理模型生成迁移性对抗样本，针对 ML Detection。
-- **LPIPS 非语义攻击**（实验性）：`lpips_attack` 子包，需 `pip install -e ".[lpips]"`。
-- **外部平台验证**（实验性）：`external_validation` 支持 Hive API + Mock 降级 + Quota Guard。
-- **Benchmark + Experiment 模式**（可用）：批量评估、Wilson CI、失败案例导出。
+| CLI `--methods` | 类别 | 说明 |
+|---|---|---|
+| `metadata` | 基础 | EXIF 注入/剥离 |
+| `encoding` | 基础 | JPEG、几何与色彩变换 |
+| `noise` | 基础 | 高斯噪声 + 像素微扰 |
+| `frequency` | 基础 | FFT 频域扰动 |
+| `texture` | 基础 | GLCM/LBP 纹理整形 |
+| `camera` | 基础 | 相机/重拍模拟 |
+| `regeneration_surrogate` | 重生成 | 代理重生成 |
+| `regeneration` | 重生成 | 真实 img2img（需模型） |
+| `lpips` | 对抗 | LPIPS / ResNet 代理攻击 |
+| `watermark` | 对抗 | SynthID 频谱去除 |
+| `frequency_peaks_cleansing` | P9/P10 | 频谱峰值清洗 |
+| `prnu_simulation` | P9/P10 | PRNU 模拟/去除 |
+| `gradient_edge_aware_perturbation` | P10.3 | 边缘感知扰动 |
+| `transfer_blackbox_attack` | P10.4 | 迁移黑盒攻击 |
+| `diffusion_reconstruction` | P9 | 扩散重建（SynthID） |
 
 ## 快速开始
 
 ### 安装
 
 ```bash
-# 核心依赖
-pip install -e .
-
-# 开发环境（包含 pytest、ruff、black）
-pip install -e ".[dev]"
-
-# 完整安装（包含 LPIPS 依赖）
-pip install -e ".[full]"
+pip install -e .              # 核心
+pip install -e ".[dev]"       # 开发（pytest、ruff、black）
+pip install -e ".[full]"      # 含 LPIPS（torch）
 ```
 
-### 快速验证（核心链路）
+### 单方法族快速测试（推荐）
 
 ```bash
-# 1. 运行测试套件
+# 将测试图放入 cli_test/images/
+cd cli_test
+python run.py --methods camera --seed 42 --quality 90
+# 输出 → cli_test/outputs/<图名>-camera.jpg + manifest
+```
+
+```bash
+# 测试 P9/P10 模块
+python run.py --methods frequency_peaks_cleansing,prnu_simulation
+python run.py --methods prnu_simulation --prnu-ref /path/to/ref.jpg  # 可选参考图
+```
+
+### WebUI
+
+```bash
+export PYTHONPATH=src
+python webui_bypass.py
+# → http://127.0.0.1:7860
+```
+
+勾选方法族后处理；P9/P10 有独立参数 Accordion，LPIPS 有强度/步数控件。
+
+### 传统 CLI / Benchmark
+
+```bash
 make test
 
-# 2. Experiment 模式（mock 平台 + Wilson CI）
-make experiment
-
-# 3. 单张图像处理
 bypass-ai-detector --input data/benchmark_samples/sample.jpg --output /tmp/out.jpg --profile quick
 
-# 4. Adversarial profile（LPIPS + 水印 + 重生成）
-bypass-ai-detector --input data/benchmark_samples/sample.jpg --output /tmp/out_adv.jpg --profile adversarial
+bypass-ai-detector --input input.jpg --output output.jpg --profile adversarial
+
+benchmark --mode=experiment --platforms remote:mock --samples 20 --output-dir exp_results
 ```
-
-### CLI 工具
-
-安装后可直接使用两个命令行入口：
-
-```bash
-# 1) 图像变换（推荐 --input/--output；positional 仍兼容）
-bypass-ai-detector --input input.jpg --output output.jpg --profile full
-
-# 2) Benchmark（默认 benchmark 模式）
-benchmark --input-dir data/benchmark_samples --output-dir results --detector local:resnet50
-
-# 3) Experiment 模式（mock 或 remote 平台）
-benchmark --mode=experiment --platforms remote:mock --samples 50 --output-dir exp_results
-```
-
-## Experiment 模式示例
-
-```bash
-make experiment
-# 或
-PYTHONPATH=src benchmark --mode=experiment --platforms remote:mock --samples 20 --output-dir experiment_demo
-```
-
-输出：
-
-- `experiment_results.json`：bypass rate + Wilson 95% CI + perceptual 均值
-- `failure_cases.csv`：未能 bypass 的图像详情
-- `summary.md`：人类可读总结
 
 ## 项目结构
 
 ```
 src/
-├── transform_core/          # 核心变换管道（TransformConfig + Registry + 7 Modules）
-├── lpips_attack/            # LPIPS 非语义攻击（实验性，可选 torch）
-├── synthid_removal/         # SynthID 水印移除（占位）
-├── detector_loop/           # Detector-in-the-Loop 框架（占位）
-├── external_validation/     # 外部平台验证（实验性）
-└── benchmark/               # BenchmarkRunner + Experiment + 报告
+├── transform_core/          # TransformConfig + Registry + Modules + Pipeline
+├── lpips_attack/            # LPIPS / ResNet 代理攻击
+├── synthid_removal/         # SynthID 水印移除（V3）
+├── detector_loop/           # Detector-in-the-Loop
+├── external_validation/     # Hive / Mock 外部验证
+└── benchmark/               # BenchmarkRunner + Experiment
+cli_test/                    # 单方法族测试工作区（images/ outputs/ run.py）
+docs/
+├── USER_GUIDE.md            # WebUI + CLI 完整指南
+└── LARK_WIKI_SECTION4_TABLE.md  # 15 项单项测试表（飞书粘贴用）
 tests/
-data/benchmark_samples/      # 示例图像
-scripts/                     # 一键实验脚本
-notebooks/                   # Colab demo
+webui_bypass.py              # Gradio WebUI 入口
+bypass_ai_detector.py        # Legacy CLI 入口
 ```
 
-## 如何添加新 TransformModule
+## 文档
 
-1. 在 `src/transform_core/modules/` 下创建 `my_new_module.py`
-2. 继承 `TransformModule`，实现 `name` 属性和 `apply` 方法
-3. 文件底部调用 `register_module(MyNewModule())`
-4. 更新 `PROFILE_METHODS`（如需要）
-
-详见 `CONTRIBUTING.md`。
+| 文档 | 用途 |
+|---|---|
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | WebUI/CLI 运行、方法族、FAQ |
+| [cli_test/README.md](cli_test/README.md) | `cli_test/` 用法 |
+| [cli_test/TEST_SETTINGS.md](cli_test/TEST_SETTINGS.md) | verified 默认参数 |
+| [docs/LARK_WIKI_SECTION4_TABLE.md](docs/LARK_WIKI_SECTION4_TABLE.md) | 单项测试效果记录表 |
 
 ## 架构概览
 
 ```mermaid
 flowchart TD
-    CLI[CLI / WebUI] --> Config[TransformConfig]
-    Config --> Pipeline[post_process_image]
-    Pipeline --> Registry[Registry]
-    Registry --> Modules[TransformModules 可用]
-    Modules --> DetectorLoop["DetectorLoop 占位"]
-    DetectorLoop --> External["External Validation 实验性"]
-    External --> Benchmark["Benchmark / Experiment 可用"]
-    Benchmark --> Report[JSON + CSV + MD/HTML]
+    WebUI[WebUI] --> Config[TransformConfig]
+    CLITest[cli_test/run.py] --> Config
+    LegacyCLI[bypass-ai-detector] --> Pipeline[post_process_image]
+    Config --> Pipeline
+    Pipeline --> Registry[TransformRegistry]
+    Registry --> Modules[TransformModules ×15]
+    Modules --> Manifest[manifest.json]
+    Pipeline --> Benchmark[Benchmark / Experiment]
 ```
+
+## 如何添加新 TransformModule
+
+1. 在 `src/transform_core/modules/` 下创建模块文件
+2. 继承 `TransformModule`，实现 `name` 与 `apply`
+3. 底部调用 `register_module(...)`，并在 `modules/__init__.py` 导入
+4. 若需 CLI 单项测试，在 `cli_test/run.py` 的 `method_enabled_flags` 中补充 `*_enabled` 映射
+
+详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## License
 
@@ -148,4 +164,4 @@ MIT
 
 ## 贡献
 
-欢迎提交 Issue 和 PR！详见 `CONTRIBUTING.md`。
+欢迎提交 Issue 和 PR！详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
