@@ -16,15 +16,15 @@ if TYPE_CHECKING:
 
 try:
     import torch
+    import torch.nn.functional as F
     import torchvision.models as models
-    import torchvision.transforms as transforms
 
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
     torch = None
     models = None
-    transforms = None
+    F = None
 
 
 class TransferBlackboxAttackModule(TransformModule):
@@ -49,61 +49,45 @@ class TransferBlackboxAttackModule(TransformModule):
             print("[TransferBlackboxAttackModule] torch 未安装，回退 surrogate")
             return self._apply_surrogate(img, config)
 
-        # P10.4-2: 代理模型加载与攻击逻辑 (简化 FGSM)
         model_name = getattr(config, "transfer_blackbox_attack_surrogate_model", "resnet50")
+        algorithm = getattr(config, "transfer_blackbox_attack_algorithm", "fgsm")
         epsilon = getattr(config, "transfer_blackbox_attack_epsilon", 0.03)
 
         try:
-            # 加载模型 (使用 pretrained=True 以获得 ImageNet 权重)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             if model_name == "resnet50":
-                model = models.resnet50(pretrained=True)
+                model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT).to(device).eval()
             else:
-                model = models.resnet18(pretrained=True)  # Fallback
+                model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT).to(device).eval()
 
-            model.eval()
-            if torch.cuda.is_available():
-                model.cuda()
+            mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+            std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
 
-            # 预处理
-            preprocess = transforms.Compose(
-                [
-                    transforms.Resize(256),
-                    transforms.CenterCrop(224),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                ]
-            )
+            orig = torch.from_numpy(np.array(img.convert("RGB"))).float() / 255.0
+            orig = orig.permute(2, 0, 1).unsqueeze(0).to(device)
+            x = orig.clone().detach()
 
-            input_tensor = preprocess(img).unsqueeze(0)
-            if torch.cuda.is_available():
-                input_tensor = input_tensor.cuda()
+            with torch.no_grad():
+                resized0 = F.interpolate(orig, size=(224, 224), mode="bilinear", align_corners=False)
+                orig_class = model((resized0 - mean) / std).argmax(dim=1)
 
-            input_tensor.requires_grad = True
+            steps = 5 if algorithm == "pgd" else 1
+            step_size = epsilon / steps
 
-            # 前向传播
-            output = model(input_tensor)
-            # 假设目标是 "0" 类 (或随机)，这里简化处理
-            target = torch.tensor([0]).cuda() if torch.cuda.is_available() else torch.tensor([0])
+            for _ in range(steps):
+                x = x.detach().requires_grad_(True)
+                resized = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+                logits = model((resized - mean) / std)
+                loss = F.cross_entropy(logits, orig_class)
+                loss.backward()
+                with torch.no_grad():
+                    step = step_size * x.grad.sign()
+                    x = x + step
+                    x = torch.max(torch.min(x, orig + epsilon), orig - epsilon)
+                    x = torch.clamp(x, 0.0, 1.0)
 
-            # 计算损失 (简化)
-            loss = torch.nn.functional.cross_entropy(output, target)
-            model.zero_grad()
-            loss.backward()
-
-            # FGSM 攻击
-            grad = input_tensor.grad.data
-            perturbation = epsilon * grad.sign()
-
-            # 应用扰动
-            perturbed_tensor = input_tensor + perturbation
-            perturbed_tensor = torch.clamp(perturbed_tensor, 0, 1)
-
-            # 后处理
-            perturbed_img = perturbed_tensor.squeeze(0).cpu().detach().numpy()
-            perturbed_img = np.transpose(perturbed_img, (1, 2, 0))
-            perturbed_img = (perturbed_img * 255).astype(np.uint8)
-
-            return Image.fromarray(perturbed_img)
+            out = (x.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+            return Image.fromarray(out, "RGB")
 
         except Exception as e:
             print(f"[TransferBlackboxAttackModule] 攻击失败: {e}，回退 surrogate")

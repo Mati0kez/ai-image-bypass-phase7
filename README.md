@@ -14,31 +14,31 @@
 
 ## 能力成熟度矩阵
 
-| 功能项 | 成熟度 | 说明 |
-|---|---|---|
-| TransformConfig + TransformModule + Registry | 可用 | 核心配置与注册表；manifest 记录完整 module_parameters |
-| 15 个方法族（单项 CLI） | 可用 | 见下方「方法族一览」；`cli_test/` 快速验证 |
-| Metadata / EXIF | 可用 | copy/strip/synthetic；无 C2PA/provenance |
-| Encoding / JPEG / resize | 可用 | 本地鲁棒性变换 |
-| Noise / pixel perturbation | 可用 | 单项测试效果较好 |
-| Frequency / FFT | 可用 | FFT 频域扰动 |
-| Texture / GLCM-LBP | 可用 | 单项测试效果较好 |
-| Camera / recapture | 可用 | 相机管线 + 多轮 JPEG；单项测试效果较好 |
-| Regeneration surrogate | 可用 | 代理重生成（无生成模型） |
-| 真实 img2img regeneration | 实验性 | 需 torch+diffusers+模型路径；否则回退 surrogate |
-| LPIPS 非语义攻击 | 实验性 | 无 detector 时用 ResNet50 PGD + 像素混合；需 torch |
-| SynthID / watermark removal | 实验性 | V3 中高频频谱衰减；无 codebook 时回退策略 |
-| Frequency Peaks Cleansing | 实验性 | 8×8 DCT 峰值衰减（已修复全局 DCT 纯黑图问题） |
-| PRNU Simulation/Removal | 实验性 | 支持参考图提取；无参考图时自生成指纹 |
-| Gradient/Edge-aware Perturbation | 实验性 | 边缘感知扰动 |
-| Transfer-based Black-box Attack | 实验性 | FGSM/PGD + ResNet；需 torch；注意输出尺寸 |
-| Diffusion Reconstruction | 实验性 | 需 diffusers + 模型；否则 surrogate no-op |
-| Detector-in-the-Loop | 实验性 | 真实闭环结构；mock/真实 Adapter 均支持 |
-| Hive 外部验证 | 实验性 | HTTP 客户端；需 API key |
-| Benchmark / Experiment | 可用 | Wilson CI、失败案例导出 |
-| WebUI | 可用 | Gradio；方法族多选 + P9/P10 参数 + LPIPS 控件 |
-| CLI 打包入口 | 可用 | `bypass-ai-detector`、`benchmark` |
-| `cli_test/` 工作区 | 可用 | 单方法族批量测试 + manifest |
+| 功能项 | 成熟度 | 说明 | 默认参数与设置理由 |
+|---|---|---|---|
+| TransformConfig + TransformModule + Registry | 可用 | 核心配置与注册表；manifest 记录完整 module_parameters | — |
+| 15 个方法族（单项 CLI） | 可用 | 见下方「方法族一览」；`cli_test/` 快速验证 | — |
+| Metadata / EXIF | 可用 | copy/strip/synthetic；无 C2PA/provenance | `metadata_mode=synthetic`：自动附加合成 EXIF，便于 traceability 测试 |
+| Encoding / JPEG / resize | 可用 | 本地鲁棒性变换 | `quality=95`（保存时 -3）：与外部检测站常用设置对齐 |
+| Noise / pixel perturbation | 可用 | 单项测试效果较好 | `pixel_strength=0.028`：轻度扰动，外部检测约 20% 降幅，画质可接受 |
+| Frequency / FFT | 可用 | FFT 频域扰动 | `fft_strength=None`（模块内默认）：与 IDBU 参考项目保持一致 |
+| Texture / GLCM-LBP | 可用 | 单项测试效果较好 | `glcm_strength=None`：与 IDBU 参考项目保持一致 |
+| Camera / recapture | 可用 | 相机管线 + 多轮 JPEG；单项测试效果较好 | `camera_sim` 默认开启 moire/lens_distortion：模拟屏摄 artifact，对齐 Moire_Attack 思路 |
+| Regeneration surrogate | 可用 | 代理重生成（无生成模型） | `regeneration_mode=surrogate`：无模型时默认轻度退化 |
+| 真实 img2img regeneration | 实验性 | 需 torch+diffusers+模型路径；否则回退 surrogate | 需 `--regeneration-model`：对齐 Synthid-Bypass / diffusers 参考项目 |
+| LPIPS 非语义攻击 | 实验性 | 无 detector 时用 ResNet50 PGD + 像素混合；需 torch | `lpips_strength=0.06`、`steps=25`、`hybrid_factor=0.45`：轻度感知扰动 + 像素混合，外部检测效果有限但画质可控 |
+| SynthID / watermark removal | 实验性 | V3 中高频频谱衰减；无 codebook 时回退策略 | `watermark_spectral_mid_high_factor=0.55`：中高频（0.12~0.85 归一化半径）衰减 55%，低频保留，对齐 UnMarker 频谱思路 |
+| Frequency Peaks Cleansing | 实验性 | 8×8 DCT 峰值衰减（已修复全局 DCT 纯黑图问题） | `threshold=2.0`、`attenuation=0.35`、`strategy=attenuate`：仅处理 u+v≥4 的高频 AC 峰值，避免纯黑图 |
+| PRNU Simulation/Removal | 实验性 | 支持参考图提取；无参考图时自生成指纹 | `prnu_simulation_strength=0.75`：自生成指纹 surrogate，对齐 prnu-python 简化版 |
+| Gradient/Edge-aware Perturbation | 实验性 | 边缘感知扰动 | `edge_weight=2.0`、`smooth_weight=0.5`、`pixel_strength=0.028`：边缘增强 + 平滑约束，轻度扰动 |
+| Transfer-based Black-box Attack | 实验性 | FGSM/PGD + ResNet；需 torch；注意输出尺寸 | `epsilon=0.03`、`algorithm=pgd`：全分辨率 PGD，对齐 TransferAttack 思路，已修复 224×224 尺寸 bug |
+| Diffusion Reconstruction | 实验性 | 需 diffusers + 模型；否则 surrogate no-op | 需 `--diffusion-model`：对齐 DeSynth / Synthid-Bypass 低去噪重建策略 |
+| Detector-in-the-Loop | 实验性 | 真实闭环结构；mock/真实 Adapter 均支持 | — |
+| Hive 外部验证 | 实验性 | HTTP 客户端；需 API key | — |
+| Benchmark / Experiment | 可用 | Wilson CI、失败案例导出 | — |
+| WebUI | 可用 | Gradio；方法族多选 + P9/P10 参数 + LPIPS 控件 | P9/P10 滑块默认与 verified 参数对齐 |
+| CLI 打包入口 | 可用 | `bypass-ai-detector`、`benchmark` | — |
+| `cli_test/` 工作区 | 可用 | 单方法族批量测试 + manifest | 5 项 verified 参数已写入 `TransformConfig` 默认值 |
 
 ## 方法族一览（15 项）
 

@@ -1,0 +1,47 @@
+{
+  "purpose": "internal_detector_robustness_evaluation",
+  "method_families": [
+    "texture",
+    "metadata"
+  ],
+  "input_path": "/Users/a0028/Documents/ai图片添加元数据/cli_test/images/20260519-110735.jpg",
+  "output_path": "/Users/a0028/Documents/ai图片添加元数据/cli_test/outputs/20260519-110735-texture.jpg",
+  "reference_photo": null,
+  "metadata_mode": "synthetic",
+  "quality": 90,
+  "seed": 42,
+  "detector_feedback": false,
+  "detector_scores": null,
+  "module_parameters": {
+    "lpips_enabled": false,
+    "lpips_blackbox": false,
+    "lpips_strength": 0.01,
+    "lpips_steps": 10,
+    "detector_feedback": false,
+    "detector_name": "local:resnet50",
+    "detector_threshold": 0.5,
+    "max_iter": 10,
+    "watermark_remove": false,
+    "regeneration_mode": "surrogate",
+    "frequency_peaks_cleansing_enabled": false,
+    "frequency_peaks_cleansing_domain": "dct",
+    "frequency_peaks_cleansing_threshold": 0.5,
+    "frequency_peaks_cleansing_replacement_strategy": "zeroing",
+    "prnu_simulation_enabled": false,
+    "prnu_simulation_mode": "extract_add",
+    "prnu_simulation_reference_path": null,
+    "prnu_simulation_strength": 0.5,
+    "gradient_edge_aware_perturbation_enabled": false,
+    "gradient_edge_aware_perturbation_edge_weight": 2.0,
+    "gradient_edge_aware_perturbation_smooth_weight": 0.5,
+    "transfer_blackbox_attack_enabled": false,
+    "transfer_blackbox_attack_surrogate_model": "resnet50",
+    "transfer_blackbox_attack_algorithm": "fgsm",
+    "transfer_blackbox_attack_epsilon": 0.03
+  },
+  "notes": [
+    "detector_feedback records simulated score history; image is not re-transformed per iteration (Phase 7 P2 scope).",
+    "No external platform bypass success claim is produced.",
+    "Active adversarial modules: lpips=False, watermark=False, regeneration=surrogate."
+  ]
+}

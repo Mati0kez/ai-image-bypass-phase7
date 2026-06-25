@@ -192,6 +192,20 @@ def post_process_image(config: TransformConfig) -> str:
             "transfer_blackbox_attack_epsilon": getattr(config, "transfer_blackbox_attack_epsilon", None),
         }
 
+        # 记录各方法族的执行结果（P0.3）
+        module_outcomes: Dict[str, Any] = {}
+        for name in selected:
+            enabled = True
+            if name == "lpips":
+                enabled = getattr(config, "lpips_enabled", False)
+            elif name == "watermark":
+                enabled = getattr(config, "watermark_remove", False)
+            elif name == "diffusion_reconstruction":
+                enabled = getattr(config, "diffusion_reconstruction_enabled", False)
+            elif name in ("frequency_peaks_cleansing", "prnu_simulation", "gradient_edge_aware_perturbation", "transfer_blackbox_attack"):
+                enabled = getattr(config, f"{name}_enabled", False)
+            module_outcomes[name] = {"enabled": bool(enabled), "applied": True}
+
         manifest: Dict[str, Any] = {
             "purpose": "internal_detector_robustness_evaluation",
             "method_families": list(selected),
@@ -199,11 +213,13 @@ def post_process_image(config: TransformConfig) -> str:
             "output_path": str(config.output_path),
             "reference_photo": str(config.real_photo_path) if config.real_photo_path else None,
             "metadata_mode": config.metadata_mode,
+            "c2pa_stripped": config.metadata_mode == "strip_c2pa",
             "quality": config.quality,
             "seed": config.seed,
             "detector_feedback": config.detector_feedback,
             "detector_scores": detector_scores if config.detector_feedback else None,
             "module_parameters": module_params,
+            "module_outcomes": module_outcomes,
             "notes": [
                 "detector_feedback records simulated score history; image is not re-transformed per iteration (Phase 7 P2 scope).",
                 "No external platform bypass success claim is produced.",

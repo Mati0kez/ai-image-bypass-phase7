@@ -92,9 +92,14 @@ class DiffusionReconstructionModule(TransformModule):
         return result
 
     def _apply_surrogate(self, img: Image.Image, config: "TransformConfig") -> Image.Image:
-        """代理模式（占位）。"""
-        print("[DiffusionReconstructionModule] surrogate 模式，返回原图")
-        return img.convert("RGB")
+        """代理模式：调用 regeneration_surrogate 进行轻量退化。"""
+        print("[DiffusionReconstructionModule] 缺少 torch/diffusers 或模型路径，使用 regeneration_surrogate 退化")
+        try:
+            from bypass_ai_detector import add_regeneration_surrogate
+
+            return add_regeneration_surrogate(img, strength=0.25)
+        except Exception:
+            return img.convert("RGB")
 
 
 # import-time 自动注册

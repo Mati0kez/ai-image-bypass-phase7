@@ -89,10 +89,27 @@ class CameraModule(TransformModule):
         return Image.fromarray(arr.astype(np.uint8), "RGB")
 
     def _apply_lens_distortion(self, img: Image.Image, rng: np.random.Generator) -> Image.Image:
-        """简单桶形畸变模拟。"""
-        # 使用 PIL 的 Image.transform 实现简单畸变（占位）
-        # 真实实现应使用 OpenCV 或 scipy.ndimage.map_coordinates
-        return img  # 占位：当前版本保持不变
+        """简单桶形畸变模拟（k1 < 0 为桶形）。"""
+        arr = np.array(img.convert("RGB")).astype(np.float32)
+        h, w = arr.shape[:2]
+        y, x = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+        cx, cy = w / 2, h / 2
+        dx = x - cx
+        dy = y - cy
+        r2 = (dx**2 + dy**2) / (max(cx, cy) ** 2)
+        k1 = -0.15  # 桶形畸变系数
+        factor = 1 + k1 * r2
+        map_x = cx + dx * factor
+        map_y = cy + dy * factor
+        # 双线性采样
+        map_x = np.clip(map_x, 0, w - 1).astype(np.float32)
+        map_y = np.clip(map_y, 0, h - 1).astype(np.float32)
+        from scipy.ndimage import map_coordinates
+
+        result = np.zeros_like(arr)
+        for c in range(3):
+            result[..., c] = map_coordinates(arr[..., c], [map_y, map_x], order=1, mode="reflect")
+        return Image.fromarray(np.clip(result, 0, 255).astype(np.uint8), "RGB")
 
 
 # import-time 自动注册

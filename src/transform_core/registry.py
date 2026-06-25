@@ -6,7 +6,7 @@ from typing import Dict, Tuple
 
 from .module import TransformModule
 
-# 方法族名称常量（核心 + 实验性对抗方法族）
+# 方法族名称常量（核心 + 实验性对抗方法族，15 项）
 METHOD_FAMILIES: Tuple[str, ...] = (
     "metadata",
     "encoding",
@@ -15,9 +15,14 @@ METHOD_FAMILIES: Tuple[str, ...] = (
     "texture",
     "camera",
     "regeneration_surrogate",
+    "regeneration",
     "lpips",
     "watermark",
-    "regeneration",
+    "frequency_peaks_cleansing",
+    "prnu_simulation",
+    "gradient_edge_aware_perturbation",
+    "transfer_blackbox_attack",
+    "diffusion_reconstruction",
 )
 
 # Profile 到方法族的默认映射
@@ -34,9 +39,14 @@ PROFILE_METHODS: Dict[str, Tuple[str, ...]] = {
         "frequency",
         "texture",
         "camera",
+        "regeneration_surrogate",
         "lpips",
         "watermark",
-        "regeneration",
+        "frequency_peaks_cleansing",
+        "prnu_simulation",
+        "gradient_edge_aware_perturbation",
+        "transfer_blackbox_attack",
+        "diffusion_reconstruction",
     ),
 }
 

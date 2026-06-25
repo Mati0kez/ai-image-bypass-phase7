@@ -21,6 +21,14 @@ try:
 except ImportError:
     _SCIPY_AVAILABLE = False
 
+try:
+    import prnu as prnu_lib
+
+    _PRNU_AVAILABLE = True
+except ImportError:
+    _PRNU_AVAILABLE = False
+    prnu_lib = None
+
 
 class PRNUSimulationModule(TransformModule):
     """PRNU 传感器指纹模拟/移除模块。"""
@@ -65,16 +73,24 @@ class PRNUSimulationModule(TransformModule):
             print(f"[PRNUSimulationModule] 参考图像加载失败: {e}")
             return self._apply_surrogate(img, config)
 
-        # 简化的 PRNU 提取：使用高斯滤波残差作为指纹估计
-        # 实际 PRNU 提取通常使用小波去噪
         target_arr = np.array(img).astype(np.float32)
         ref_arr = np.array(ref_img.resize(img.size)).astype(np.float32)
 
-        # 提取指纹 (简化为残差)
-        # 注意：真实 PRNU 需要多张图像平均
-        fingerprint = ref_arr - gaussian_filter(ref_arr, sigma=5)
+        fingerprint = None
+        if _PRNU_AVAILABLE and prnu_lib is not None:
+            try:
+                # prnu-python 真实提取（单张近似）
+                ref_gray = np.array(ref_img.convert("L")).astype(np.float32)
+                fingerprint = prnu_lib.extract_fingerprint([ref_gray])  # type: ignore[attr-defined]
+                if fingerprint is not None:
+                    fingerprint = np.stack([fingerprint] * 3, axis=-1)  # 扩展到 RGB
+            except Exception:
+                fingerprint = None
 
-        # 叠加指纹
+        if fingerprint is None:
+            # 简化残差
+            fingerprint = ref_arr - gaussian_filter(ref_arr, sigma=5)
+
         result_arr = target_arr + fingerprint * strength
         result_arr = np.clip(result_arr, 0, 255).astype(np.uint8)
 

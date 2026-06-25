@@ -56,7 +56,9 @@ def _metadata_bytes(
     mode: str, real_photo_path: Optional[str], image: Image.Image
 ) -> Optional[bytes]:
     normalized = (mode or "copy").lower()
-    if normalized == "strip":
+    if normalized in ("strip", "strip_c2pa"):
+        if normalized == "strip_c2pa":
+            print("[metadata] strip_c2pa 模式：已跳过 EXIF 注入（C2PA 剥离需额外实现）")
         return None
     if normalized == "synthetic":
         return _synthetic_exif(image)

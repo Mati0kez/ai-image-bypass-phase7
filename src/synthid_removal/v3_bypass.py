@@ -75,6 +75,14 @@ class SynthIDRemovalModule(TransformModule):
         arr = np.array(img.convert("RGB"), dtype=np.float32)
         result = np.zeros_like(arr)
 
+        # 延迟加载 codebook（支持 CLI/WebUI 通过 config 指定路径）
+        codebook_path = getattr(config, "watermark_codebook_path", None)
+        if codebook_path and self.codebook is None:
+            try:
+                self.codebook = SpectralCodebook.load(codebook_path)
+            except Exception as e:
+                print(f"[SynthIDRemovalModule] codebook 加载失败: {e}")
+
         # 自动匹配 profile（如果 codebook 存在）
         profile = None
         if self.codebook:

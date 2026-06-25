@@ -93,10 +93,15 @@ class LPIPSModule(BaseLPIPSModule):
 
         use_detector = getattr(config, "detector_feedback", False)
         if not use_detector:
+            # P2.1: 默认优先使用 LPIPS loss 驱动 PGD（保留 hybrid 作为可选）
             try:
-                return self._apply_surrogate_attack(img, config)
+                return self._apply_lpips_attack(img, config)
             except Exception as e:
-                print(f"[LPIPSModule] surrogate 攻击失败，回退梯度路径: {e}")
+                print(f"[LPIPSModule] LPIPS 攻击失败，回退 surrogate: {e}")
+                try:
+                    return self._apply_surrogate_attack(img, config)
+                except Exception as e2:
+                    print(f"[LPIPSModule] surrogate 攻击失败: {e2}")
 
         # 梯度路径：detector_feedback=True 时 LPIPS + detector 联合优化
         device = self._get_device(config)

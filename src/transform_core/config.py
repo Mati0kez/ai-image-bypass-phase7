@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Literal, Optional
 
 TransformProfile = Literal["quick", "full", "texture", "camera", "metadata", "adversarial"]
-MetadataMode = Literal["copy", "strip", "synthetic"]
+MetadataMode = Literal["copy", "strip", "synthetic", "strip_c2pa"]
 
 
 @dataclass(frozen=True)
@@ -52,6 +52,7 @@ class TransformConfig:
 
     watermark_remove: bool = False
     watermark_spectral_mid_high_factor: float = 0.55
+    watermark_codebook_path: Optional[str] = None
     detector_feedback: bool = False
     detector_name: str = "local:resnet50"
     detector_threshold: float = 0.5
@@ -111,5 +112,7 @@ class TransformConfig:
             "chromatic_aberration": True,
             "hot_pixels": True,
             "bayer_demosaic": False,
+            "moire_pattern": True,
+            "lens_distortion": True,
         }
     )

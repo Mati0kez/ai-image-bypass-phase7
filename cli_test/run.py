@@ -54,6 +54,8 @@ def process_folder(
     quality: int,
     seed: int,
     prnu_ref: Optional[str] = None,
+    regeneration_model: Optional[str] = None,
+    diffusion_model: Optional[str] = None,
 ):
     """批量处理 images/ 目录下的所有图片"""
     input_dir.mkdir(parents=True, exist_ok=True)
@@ -93,6 +95,17 @@ def process_folder(
             config_kwargs.update(method_enabled_flags(methods))
         if prnu_ref and "prnu_simulation" in methods:
             config_kwargs["prnu_simulation_reference_path"] = prnu_ref
+        if regeneration_model:
+            config_kwargs["regeneration_mode"] = "local"
+            config_kwargs["regeneration_model_path"] = regeneration_model
+        if diffusion_model and "diffusion_reconstruction" in methods:
+            config_kwargs["diffusion_reconstruction_enabled"] = True
+            config_kwargs["diffusion_reconstruction_mode"] = "local"
+            config_kwargs["diffusion_reconstruction_model_path"] = diffusion_model
+        if (regeneration_model is None or regeneration_model == "") and "regeneration" in methods:
+            print("[WARN] regeneration 方法族未指定 --regeneration-model，将回退 surrogate")
+        if (diffusion_model is None or diffusion_model == "") and "diffusion_reconstruction" in methods:
+            print("[WARN] diffusion_reconstruction 方法族未指定 --diffusion-model，将回退 surrogate")
 
         config = TransformConfig(**config_kwargs)
 
@@ -125,6 +138,18 @@ def main():
         default="",
         help="PRNU 参考图像路径（可选；未指定时使用自生成指纹）",
     )
+    parser.add_argument(
+        "--regeneration-model",
+        type=str,
+        default="",
+        help="Stable Diffusion 模型路径（用于 regeneration / diffusion_reconstruction 真实 img2img）",
+    )
+    parser.add_argument(
+        "--diffusion-model",
+        type=str,
+        default="",
+        help="Stable Diffusion 模型路径（用于 diffusion_reconstruction）",
+    )
 
     args = parser.parse_args()
 
@@ -141,6 +166,8 @@ def main():
         quality=args.quality,
         seed=args.seed,
         prnu_ref=args.prnu_ref.strip() or None,
+        regeneration_model=args.regeneration_model.strip() or None,
+        diffusion_model=args.diffusion_model.strip() or None,
     )
 
     print("\n全部处理完成！结果保存在 outputs/ 目录")
