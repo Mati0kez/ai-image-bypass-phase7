@@ -49,6 +49,21 @@ class TransferBlackboxAttackModule(TransformModule):
             print("[TransferBlackboxAttackModule] torch 未安装，回退 surrogate")
             return self._apply_surrogate(img, config)
 
+        target_repo = getattr(config, "target_detector_repo", None)
+        if target_repo:
+            # white-box path against HF detector
+            try:
+                from attack.whitebox import whitebox_attack
+                result = whitebox_attack(
+                    img,
+                    target_repo,
+                    epsilon=getattr(config, "transfer_blackbox_attack_epsilon", 0.03),
+                    steps=10,
+                )
+                return result["adversarial_image"]
+            except Exception as e:
+                print(f"[TransferBlackboxAttackModule] whitebox 攻击失败: {e}，回退 surrogate")
+
         model_name = getattr(config, "transfer_blackbox_attack_surrogate_model", "resnet50")
         algorithm = getattr(config, "transfer_blackbox_attack_algorithm", "fgsm")
         epsilon = getattr(config, "transfer_blackbox_attack_epsilon", 0.03)

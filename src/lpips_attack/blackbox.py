@@ -143,3 +143,24 @@ def blackbox_perturb(
         )
 
     return _to_pil(x_adv)
+
+
+def hf_inference_detector(repo_id: str, api_token: Optional[str] = None) -> Callable[[Image.Image], float]:
+    """Factory that returns a callable score function using HF Inference API.
+
+    The returned function accepts a PIL image and returns the "artificial" class score.
+    """
+    from huggingface_hub import InferenceClient
+
+    client = InferenceClient(model=repo_id, token=api_token)
+
+    def _score(img: Image.Image) -> float:
+        # HF Inference returns list of dicts with label/score
+        result = client.image_classification(img)
+        # Assume the model returns "artificial" or similar as positive class
+        for item in result:
+            if "artificial" in item["label"].lower() or "ai" in item["label"].lower():
+                return float(item["score"])
+        return 0.0  # fallback
+
+    return _score

@@ -81,10 +81,14 @@ class LPIPSModule(BaseLPIPSModule):
         )
         if use_blackbox:
             try:
-                from .blackbox import blackbox_perturb
+                from .blackbox import blackbox_perturb, hf_inference_detector
 
-                # 构造 detector callable（如果 self.detector 存在）
-                det_callable = self.detector.score if self.detector is not None else None
+                target_repo = getattr(config, "target_detector_repo", None)
+                if target_repo:
+                    det_callable = hf_inference_detector(target_repo)
+                else:
+                    det_callable = self.detector.score if self.detector is not None else None
+
                 return blackbox_perturb(
                     img, self._get_lpips_model(self._get_device(config)), det_callable, config
                 )

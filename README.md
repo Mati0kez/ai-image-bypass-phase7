@@ -162,6 +162,20 @@ flowchart TD
 
 详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+## 梯度攻击框架（HF 检测模型）
+
+新增 `src/attack/` 包，支持针对任意 Hugging Face 图像分类检测器（例如 `umm-maybe/AI-image-detector`、`Organika/sdxl-detector`）的白盒 PGD 与黑盒 SPSA 攻击。
+
+CLI 用法示例：
+
+```bash
+python cli_test/run.py --methods adversarial_attack --target-detector umm-maybe/AI-image-detector
+```
+
+攻击结果写入 manifest（attack_success、original_score、adversarial_score）。
+
+云端验证：支持 HF Inference API 与自建 Gradio Space，详见 `docs/ATTACK_GUIDE.md`。
+
 ## License
 
 MIT

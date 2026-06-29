@@ -106,6 +106,8 @@ def process_folder(
             print("[WARN] regeneration 方法族未指定 --regeneration-model，将回退 surrogate")
         if (diffusion_model is None or diffusion_model == "") and "diffusion_reconstruction" in methods:
             print("[WARN] diffusion_reconstruction 方法族未指定 --diffusion-model，将回退 surrogate")
+        if args.target_detector:
+            config_kwargs["target_detector_repo"] = args.target_detector
 
         config = TransformConfig(**config_kwargs)
 
@@ -149,6 +151,19 @@ def main():
         type=str,
         default="",
         help="Stable Diffusion 模型路径（用于 diffusion_reconstruction）",
+    )
+    parser.add_argument(
+        "--target-detector",
+        type=str,
+        default="",
+        help="HF 检测模型 repo（例如 umm-maybe/AI-image-detector）",
+    )
+    parser.add_argument(
+        "--attack-mode",
+        type=str,
+        default="whitebox",
+        choices=["whitebox", "blackbox", "hybrid"],
+        help="攻击模式",
     )
 
     args = parser.parse_args()
